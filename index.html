@@ -71,6 +71,16 @@
   .ticket button.list, .mcard button.buy { background:var(--tang); color:#fff; border:none; }
   .prov { margin:6px 0 0; padding-left:16px; font-size:12px; line-height:1.6; }
   select.vsel { width:100%; padding:7px; border-radius:7px; border:1px solid var(--line); margin-bottom:8px; }
+  .viewbar { flex-wrap:wrap; right:14px; }
+  .viewhint { flex-basis:100%; color:#fff; background:rgba(13,17,21,.62); padding:6px 10px; border-radius:10px; max-width:560px; }
+  .flowbar { position:absolute; left:50%; transform:translateX(-50%); bottom:14px; z-index:6; display:flex; align-items:center; gap:10px;
+    background:rgba(13,17,21,.85); color:#fff; padding:8px 10px; border-radius:999px; font-family:Helvetica,Arial,sans-serif; font-size:13px;
+    max-width:94%; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+  .flowbar.hidden { display:none; }
+  .flowbar button { border:none; cursor:pointer; font-size:13px; padding:8px 14px; border-radius:999px; background:rgba(255,255,255,.14); color:#fff; white-space:nowrap; }
+  .flowbar #flowNext { background:var(--tang); font-weight:bold; }
+  .flowbar #flowLabel { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .qtylabel { font-family:Helvetica,Arial,sans-serif; font-size:12px; letter-spacing:.05em; text-transform:uppercase; opacity:.65; margin:10px 0 2px; }
   .viewhint { font-size:12px; opacity:.75; max-width:520px; line-height:1.45; }
   .callit { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:14px; }
   .callit input[type=number] { width:130px; padding:8px; border-radius:8px; border:1px solid var(--line); font-size:14px; }
@@ -100,6 +110,11 @@
       <button id="viewOverview">Overview — orbit view</button>
       <button id="viewTop">Top view — seat map</button>
       <span class="viewhint">This is the 3D venue map: drag to spin it, tap a coloured sector and the camera flies in to show the view from those seats.</span>
+    </div>
+    <div id="flowbar" class="flowbar hidden">
+      <button id="flowBack">⌄ Full venue</button>
+      <span id="flowLabel"></span>
+      <button id="flowNext">Choose seats →</button>
     </div>
   </div>
   <aside>
@@ -407,7 +422,7 @@ const detailEl = document.getElementById("detail");
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x101418);
-scene.fog = new THREE.Fog(0x101418, 260, 520);
+scene.fog = new THREE.Fog(0x101418, 500, 1200);
 
 const camera = new THREE.PerspectiveCamera(50, canvasWrap.clientWidth / canvasWrap.clientHeight, 0.1, 1000);
 camera.position.set(150, 110, 150);
@@ -426,6 +441,7 @@ controls.minDistance = 25;
 controls.maxDistance = 320;
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+scene.add(new THREE.HemisphereLight(0xdfeaff, 0x1a1d20, 0.55));
 const sun = new THREE.DirectionalLight(0xffffff, 1.1);
 sun.position.set(120, 180, 60);
 sun.castShadow = true;
@@ -460,20 +476,23 @@ function buildBowl() {
     for (const sector of ACTIVE_SECTORS) {
       const a0 = THREE.MathUtils.degToRad(sector.a0);
       const a1 = THREE.MathUtils.degToRad(sector.a1);
-      const geo = new THREE.CylinderGeometry(
-        rMid, rMid, height, 6, 1, true, a0, a1 - a0
-      );
-      const mat = new THREE.MeshStandardMaterial({
-        color: sector.color, roughness: 0.85, side: THREE.DoubleSide,
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.y = ring.h0 + height / 2;
-      mesh.castShadow = true;
-      mesh.userData = { sectorId: sector.id, ringId: ring.id };
-      bowlGroup.add(mesh);
-      pickables.push(mesh);
-      if (!sectorMeshes.has(sector.id)) sectorMeshes.set(sector.id, []);
-      sectorMeshes.get(sector.id).push(mesh);
+      // Terraced: 3 steps per band, radius + shade stepping up — reads as seat rows.
+      const STEPS = 3;
+      for (let s = 0; s < STEPS; s++) {
+        const rS = ring.d0 + (ring.d1 - ring.d0) * ((s + 0.5) / STEPS);
+        const hS = height / STEPS;
+        const geo = new THREE.CylinderGeometry(rS, rS, hS, 6, 1, true, a0, a1 - a0);
+        const col = new THREE.Color(sector.color); col.offsetHSL(0, 0, (s - 1) * 0.05);
+        const mat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.85, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = ring.h0 + hS * (s + 0.5);
+        mesh.castShadow = true;
+        mesh.userData = { sectorId: sector.id, ringId: ring.id };
+        bowlGroup.add(mesh);
+        pickables.push(mesh);
+        if (!sectorMeshes.has(sector.id)) sectorMeshes.set(sector.id, []);
+        sectorMeshes.get(sector.id).push(mesh);
+      }
     }
     // ring walkway
     const walk = new THREE.Mesh(
@@ -485,6 +504,32 @@ function buildBowl() {
   }
 }
 buildBowl();
+
+// Apron floor so the bowl interior reads as a venue, not a void (top view).
+const apron = new THREE.Mesh(
+  new THREE.CircleGeometry(97, 48),
+  new THREE.MeshStandardMaterial({ color: 0x39424c, roughness: 1 })
+);
+apron.rotation.x = -Math.PI / 2; apron.position.y = 0.05; scene.add(apron);
+// Roof ring + floodlight pylons — silhouette that reads "stadium" instantly.
+const roof = new THREE.Mesh(
+  new THREE.CylinderGeometry(93, 93, 3, 64, 1, true),
+  new THREE.MeshStandardMaterial({ color: 0x22282e, roughness: 0.9, side: THREE.DoubleSide })
+);
+roof.position.y = 54; scene.add(roof);
+const roofTop = new THREE.Mesh(
+  new THREE.RingGeometry(58, 95, 64),
+  new THREE.MeshStandardMaterial({ color: 0x2b3238, roughness: 1, side: THREE.DoubleSide })
+);
+roofTop.rotation.x = -Math.PI / 2; roofTop.position.y = 55.6; scene.add(roofTop);
+for (const [fx, fz] of [[100, 75], [-100, 75], [100, -75], [-100, -75]]) {
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 64, 6),
+    new THREE.MeshStandardMaterial({ color: 0x555f68, roughness: 0.8 }));
+  pole.position.set(fx, 32, fz); scene.add(pole);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(7, 3.5, 1),
+    new THREE.MeshStandardMaterial({ color: 0x333333, emissive: 0xfff6d8, emissiveIntensity: 1.4 }));
+  head.position.set(fx, 65, fz); head.lookAt(0, 0, 0); scene.add(head);
+}
 
 // --- Sector list (synced with the 3D scene both ways) -----------------------
 let selected = null; // sector object
@@ -514,23 +559,32 @@ function highlight(sector, on) {
 }
 
 function selectSector(sector, fly) {
+  if (selected !== sector) assignment = null;
   if (selected) highlight(selected, false);
   selected = sector;
   highlight(sector, true);
   renderList();
   renderDetail();
   if (fly) flyToSector(sector, selectedRing);
+  inSeatView = false;
+  showFlow(`${sector.name} — ${EVENT.ringLabel} from ${CUR}${fromPrice(sector, ACTIVE_RINGS)}`);
+}
+
+let assignment = null;
+let inSeatView = false;
+function makeAssignment() {
+  return { row: 1 + Math.floor(Math.random() * 14), seatStart: 1 + Math.floor(Math.random() * 28) };
 }
 
 function renderDetail() {
   if (!selected) {
-    detailEl.innerHTML = `<p class="hint">Pick a sector on the map or in the list.</p>`;
+    detailEl.innerHTML = `<p class="hint">Pick a price area on the map or in the list — you choose the area and how many seats together; the allocating engine assigns the actual seats, and you accept or decline them.</p>`;
     return;
   }
   const price = sectorPrice(selected, selectedRing);
   detailEl.innerHTML = `
     <h3>${selected.name}</h3>
-    <label class="ring-label">${EVENT.ringLabel}
+    <label class="ring-label">Price area — ${EVENT.ringLabel}
       <select id="ringSel">${ACTIVE_RINGS.map((r) => `<option value="${r.id}" ${r.id === selectedRing.id ? "selected" : ""}>${r.name} — ${CUR}${sectorPrice(selected, r)}</option>`).join("")}</select>
     </label>
     <div class="qtyrow">
@@ -540,28 +594,49 @@ function renderDetail() {
       <span class="unit">× ${CUR}${price}</span>
     </div>
     <div class="total">Total <strong>${CUR}${price * qty}</strong> <span class="mocktag">MOCK PRICES</span></div>
+    <div class="qtylabel">Seats together</div>
     <div class="btnrow">
-      <button id="seatBtn" class="ghost">Seat view</button>
-      <button id="buyBtn" class="cta">Mock checkout</button>
+      <button id="seatBtn" class="ghost">View from this area</button>
+      <button id="assignBtn" class="cta">Assign my seats →</button>
     </div>
+    <div id="assignBox">${assignment ? `
+      <div class="receipt" style="border-left-color:var(--tang)">
+        <strong>🎟 Assigned for you</strong> — ${selected.name} · ${selectedRing.name}<br>
+        Row ${assignment.row} · Seats ${assignment.seatStart}–${assignment.seatStart + qty - 1} — together, by the allocating engine <span class="mocktag">MOCK ALLOCATION</span><br>
+        Total <strong>${CUR}${price * qty}</strong>
+        <div class="btnrow" style="margin-top:8px">
+          <button id="acceptBtn" class="cta">✓ Accept — mint my tickets</button>
+          <button id="reassignBtn" class="ghost">↻ Decline — different seats</button>
+        </div>
+      </div>` : ""}</div>
     <div id="receipt"></div>`;
   document.getElementById("ringSel").addEventListener("change", (e) => {
     selectedRing = ACTIVE_RINGS.find((r) => r.id === e.target.value);
+    assignment = null;
     renderDetail();
   });
-  document.getElementById("qMinus").addEventListener("click", () => { qty = Math.max(1, qty - 1); renderDetail(); });
-  document.getElementById("qPlus").addEventListener("click", () => { qty = Math.min(10, qty + 1); renderDetail(); });
+  document.getElementById("qMinus").addEventListener("click", () => { qty = Math.max(1, qty - 1); assignment = null; renderDetail(); });
+  document.getElementById("qPlus").addEventListener("click", () => { qty = Math.min(10, qty + 1); assignment = null; renderDetail(); });
   document.getElementById("seatBtn").addEventListener("click", () => seatView(selected, selectedRing));
-  document.getElementById("buyBtn").addEventListener("click", mockCheckout);
+  document.getElementById("assignBtn").addEventListener("click", () => {
+    assignment = makeAssignment();
+    renderDetail();
+    document.getElementById("assignBox").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+  const acc = document.getElementById("acceptBtn");
+  if (acc) acc.addEventListener("click", () => mockCheckout(assignment));
+  const rea = document.getElementById("reassignBtn");
+  if (rea) rea.addEventListener("click", () => { assignment = makeAssignment(); renderDetail(); });
 }
 
-function mockCheckout() {
+function mockCheckout(asg) {
   const minted = mintTicket(selected, selectedRing, sectorPrice(selected, selectedRing) * qty);
   const el = document.getElementById("receipt");
   const ref = "MOCK-" + Math.random().toString(36).slice(2, 8).toUpperCase();
   el.innerHTML = `<div class="receipt">
     <strong>Mock order ${ref}</strong><br>
     ${qty} × ${selected.name} · ${selectedRing.name} — ${CUR}${sectorPrice(selected, selectedRing) * qty}<br>
+    ${asg ? `Seats assigned together: Row ${asg.row} · Seats ${asg.seatStart}–${asg.seatStart + qty - 1}<br>` : ""}
     Event: ${EVENT.receipt}<br>
     <span class="mocktag">MOCK SETTLEMENT</span> NFT Ticket #${minted.id} minted to your wallet — see “My tickets” below. In production this settles in USDC
     on Solana with GIRAx attestation of the ticket. No funds move in this mock-up.
@@ -588,9 +663,45 @@ function flyToSector(sector, ring) {
 function seatView(sector, ring) {
   const p = sectorPoint(sector, ring, undefined, 1.5);
   flyTo(p, new THREE.Vector3(0, 2, 0));
+  inSeatView = true;
+  showFlow("The view from your seats");
 }
-document.getElementById("viewOverview").addEventListener("click", () => flyTo(new THREE.Vector3(150, 110, 150), new THREE.Vector3(0, 4, 0)));
-document.getElementById("viewTop").addEventListener("click", () => flyTo(new THREE.Vector3(0.1, 240, 0.1), new THREE.Vector3(0, 0, 0)));
+
+// --- Fluid flow bar: the way out of any focused view, and forward to seats ---
+const flowbar = document.getElementById("flowbar");
+const flowLabel = document.getElementById("flowLabel");
+const flowBack = document.getElementById("flowBack");
+function showFlow(label) {
+  if (!flowbar) return;
+  flowLabel.textContent = label;
+  flowBack.textContent = inSeatView ? "⌄ Back to sector" : "⌄ Full venue";
+  flowbar.classList.remove("hidden");
+}
+flowBack.addEventListener("click", () => {
+  if (inSeatView && selected) {
+    inSeatView = false;
+    flyToSector(selected, selectedRing);
+    showFlow(`${selected.name} — ${EVENT.ringLabel} from ${CUR}${fromPrice(selected, ACTIVE_RINGS)}`);
+  } else {
+    inSeatView = false; selected = null; assignment = null;
+    renderList(); renderDetail();
+    flyTo(new THREE.Vector3(150, 110, 150), new THREE.Vector3(0, 4, 0));
+    flowbar.classList.add("hidden");
+  }
+});
+document.getElementById("flowNext").addEventListener("click", () => {
+  document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+document.getElementById("viewOverview").addEventListener("click", () => {
+  inSeatView = false;
+  flyTo(new THREE.Vector3(150, 110, 150), new THREE.Vector3(0, 4, 0));
+  if (!selected && flowbar) flowbar.classList.add("hidden");
+});
+document.getElementById("viewTop").addEventListener("click", () => {
+  inSeatView = false;
+  flyTo(new THREE.Vector3(0.1, 240, 0.1), new THREE.Vector3(0, 0, 0));
+  showFlow("Top view — the full seat map");
+});
 
 // --- Picking ------------------------------------------------------------------
 const raycaster = new THREE.Raycaster();
