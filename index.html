@@ -162,21 +162,21 @@
   will settle at in the secondary market by match week for <strong>Internacional vs São Paulo FC</strong>. When the market settles,
   the <strong>two closest calls</strong> win tickets: closest call takes the <span class="prize">grand prize — a PAIR of tickets</span>;
   second closest takes the <span class="prize">consolation — a SINGLE ticket</span>. Prize tickets are minted as the same attested
-  NFTs, straight into the winner's wallet. Every call is a signal the supply side prices against — demand, revealed before on-sale.
+  NFTs, straight into the winner's wallet. Prize inventory is held back from the platform's own primary allocation \u2014 never bought off the secondary market, so nobody can pump the index to inflate a prize. Calls are open to primary ticket holders only: you must own the asset to price its secondary market. Every call is a signal the supply side prices against — demand, revealed before on-sale.
   Positions bridge in via <strong>NEAR Intents</strong> (mocked here).</p>
   <div class="callit">
     <div class="mcard"><h3>🎯 Make your call</h3>
       <p class="hint">Your call (R$):</p>
       <input type="number" id="callInput" min="50" max="5000" step="1" placeholder="e.g. 600">
       <button class="wbtn" id="callBtn" style="margin-left:8px">Submit call</button>
-      <p class="hint" id="callStatus" style="margin-top:8px">Connect your wallet above, then call the settled price. One call per wallet in this mock.</p>
+      <p class="hint" id="callStatus" style="margin-top:8px">Primary ticket holders only \u2014 buy in the primary market above and your call unlocks. One call per wallet in this mock.</p>
       <button class="wbtn" id="settleBtn" style="background:var(--tang); margin-top:6px">Settle the market (mock)</button>
       <p class="hint" id="settleOut" style="margin-top:8px"></p>
     </div>
     <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
   </div>
 </section>
-<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v6 (higher overview clears the roofline; full pitch markings). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
+<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v7 (Event Market calls gated to primary ticket holders; prizes from the held-back primary allocation). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
@@ -400,7 +400,6 @@ EVENTS.push(
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
 
 let ACTIVE_SECTORS = SECTORS;
 let ACTIVE_RINGS = RINGS;
@@ -859,12 +858,12 @@ function connectWallet() {
 }
 document.getElementById("walletBtn").addEventListener("click", connectWallet);
 
-function mintTicket(sector, ring, price) {
+function mintTicket(sector, ring, price, acquiredVia = "primary") {
   if (!MARKET.wallet) connectWallet();
   const t = {
     id: MARKET.counter++,
     sector: sector.name, ring: ring.name, price,
-    owner: MARKET.wallet, listed: null,
+    owner: MARKET.wallet, listed: null, acquiredVia,
     ree: "0x" + hex(32),
     history: [{ from: ISSUER, to: MARKET.wallet, kind: "Primary mint", hash: "0x" + hex(32) }],
   };
@@ -932,7 +931,7 @@ function renderMarket() {
     const t = MARKET.tickets.find((x) => x.id === Number(b.dataset.buy));
     const paid = t.listed;
     t.history.push({ from: t.owner, to: MARKET.wallet, kind: `Secondary sale · ${CUR}${paid}`, hash: "0x" + hex(32) });
-    t.owner = MARKET.wallet; t.price = paid; t.listed = null;
+    t.owner = MARKET.wallet; t.price = paid; t.listed = null; t.acquiredVia = "secondary";
     renderMarket();
   }));
 }
@@ -984,6 +983,8 @@ document.getElementById("callBtn").addEventListener("click", () => {
   if (!MARKET.wallet) connectWallet();
   const v = Number(document.getElementById("callInput").value);
   const st = document.getElementById("callStatus");
+  const holdsPrimary = MARKET.tickets.some((t) => t.owner === MARKET.wallet && t.acquiredVia === "primary");
+  if (!holdsPrimary) { st.textContent = "Calls are open to primary ticket holders only \u2014 you must own the asset to price its secondary market. Buy in the primary market above; your call unlocks with your ticket."; return; }
   if (!v || v < 50) { st.textContent = "Enter a call of at least R$50."; return; }
   const mine = EVENT_MARKET.calls.find((c) => c.addr === MARKET.wallet);
   if (mine) mine.call = v; else EVENT_MARKET.calls.push({ addr: MARKET.wallet, call: v });
@@ -1000,8 +1001,8 @@ document.getElementById("settleBtn").addEventListener("click", (e) => {
   let msg = `Settled at R$${EVENT_MARKET.settledPrice}. Closest call: ${short(ranked[0].addr)} (R$${ranked[0].call}) wins the PAIR. Second: ${short(ranked[1].addr)} (R$${ranked[1].call}) wins a SINGLE.`;
   if (MARKET.wallet) {
     const myRank = ranked.findIndex((c) => c.addr === MARKET.wallet);
-    if (myRank === 0) { mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice); mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice); msg += " 🏆 That's YOU — two prize NFTs minted to your wallet (see My tickets above)."; }
-    else if (myRank === 1) { mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice); msg += " 🥈 That's YOU — one prize NFT minted to your wallet (see My tickets above)."; }
+    if (myRank === 0) { mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice, "prize"); mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice, "prize"); msg += " 🏆 That's YOU — two prize NFTs minted to your wallet (see My tickets above)."; }
+    else if (myRank === 1) { mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice, "prize"); msg += " 🥈 That's YOU — one prize NFT minted to your wallet (see My tickets above)."; }
     else if (myRank > 1) msg += ` Your call placed #${myRank + 1} — no prize this time.`;
   }
   out.innerHTML = msg;
