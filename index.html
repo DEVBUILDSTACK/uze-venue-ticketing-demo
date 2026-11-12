@@ -24,7 +24,7 @@
   .viewbar button, .ghost { font-family:Helvetica,Arial,sans-serif; font-size:12px; padding:7px 12px; border-radius:999px;
     border:1px solid var(--line); background:#fff; cursor:pointer; }
   aside { border-left:1px solid var(--line); background:var(--panel); padding:16px; overflow:auto; }
-  .evtabs { display:flex; gap:8px; margin-bottom:12px; }
+  .evtabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
   .evtabs button { flex:1; font-family:Helvetica,Arial,sans-serif; font-size:13px; padding:9px 6px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; }
   .evtabs button.active { background:var(--ink); color:#fff; border-color:var(--ink); }
   .matchcard { display:flex; align-items:stretch; gap:8px; margin-bottom:8px; }
@@ -279,6 +279,107 @@ const EVENTS = [
       <div class="team away"><span class="abbr">POA</span><span class="tname">Porto Alegre</span><span class="tcity">Rio Grande do Sul</span></div>`,
   },
 ];
+
+// --- F1 North America trio + LA28 (forward-looking) --------------------------
+// F1 sourcing model (James, 2026-11-12): street circuits have no venue box
+// office — grandstand inventory comes via the production company that manages
+// the event. LA28 is forward-looking; key sports per James: Lacrosse Sixes,
+// Surfing, Basketball, Swimming & Diving (aquatics — natural seat selection).
+const F1RINGS = null; // share the stadium ring bands as grandstand row bands
+EVENTS.push(
+  {
+    id: "f1-miami", tab: "🏎 F1 Miami", kind: "f1", currency: "$",
+    venue: "Miami International Autodrome — Demo Survey", city: "Miami Gardens",
+    ringLabel: "Row band", centerColor: 0x3a3f45,
+    banner: "🏎 <strong>Formula 1 — Miami Grand Prix</strong> · May 2027 · Street circuit: grandstand inventory via the event's production company — location choice is the premium product",
+    receipt: "F1 Miami Grand Prix · May 2027 (demo event)",
+    sectors: [
+      { id: "sf", name: "Start/Finish Grandstand", a0: 70, a1: 110, base: 890, color: 0xd94f04 },
+      { id: "t1g", name: "Turn 1 Grandstand", a0: 40, a1: 70, base: 640, color: 0xe86a1c },
+      { id: "t1b", name: "Turn 1 Grandstand", a0: 110, a1: 140, base: 640, color: 0xe86a1c },
+      { id: "marina-a", name: "Marina Grandstand", a0: 22, a1: 40, base: 720, color: 0x2e6fb7 },
+      { id: "marina-b", name: "Marina Grandstand", a0: 140, a1: 158, base: 720, color: 0x2e6fb7 },
+      { id: "paddock", name: "Paddock Club Hospitality", a0: 250, a1: 290, base: 4900, color: 0xc9a227 },
+      { id: "beach-a", name: "Beach Grandstand", a0: 220, a1: 250, base: 560, color: 0x4a8ac4 },
+      { id: "beach-b", name: "Beach Grandstand", a0: 290, a1: 320, base: 560, color: 0x4a8ac4 },
+      { id: "campus-a", name: "Campus Pass — GA", a0: 158, a1: 202, base: 290, color: 0x3f9e4d },
+      { id: "campus-b", name: "Campus Pass — GA", a0: 338, a1: 382, base: 290, color: 0x3f9e4d },
+    ],
+    rings: F1RINGS,
+    card: `<div class="team home" style="background:#d94f04"><span class="abbr">MIA</span><span class="tname">Miami Grand Prix</span><span class="tcity">Street Circuit</span></div>
+      <div class="vs">F1<br><span>MAY<br>2027</span></div>
+      <div class="team away"><span class="abbr">USA</span><span class="tname">North America Leg</span><span class="tcity">1 of 3</span></div>`,
+  },
+  {
+    id: "f1-vegas", tab: "🏎 F1 Las Vegas", kind: "f1", currency: "$",
+    venue: "Las Vegas Strip Circuit — Demo Survey", city: "Las Vegas",
+    ringLabel: "Row band", centerColor: 0x2b2b33,
+    banner: "🏎 <strong>Formula 1 — Las Vegas Grand Prix</strong> · November 2027 · Night race on the Strip — grandstands via the event production company",
+    receipt: "F1 Las Vegas Grand Prix · November 2027 (demo event)",
+    sectors: [
+      { id: "main-g", name: "Main Grandstand", a0: 70, a1: 110, base: 1050, color: 0x7a3fa0 },
+      { id: "eh-a", name: "East Harmon Grandstand", a0: 40, a1: 70, base: 780, color: 0x9a5fc0 },
+      { id: "eh-b", name: "East Harmon Grandstand", a0: 110, a1: 140, base: 780, color: 0x9a5fc0 },
+      { id: "sphere-a", name: "Sphere Zone — GA", a0: 22, a1: 40, base: 520, color: 0xb08fd0 },
+      { id: "sphere-b", name: "Sphere Zone — GA", a0: 140, a1: 158, base: 520, color: 0xb08fd0 },
+      { id: "fountain", name: "Bellagio Fountain Club", a0: 250, a1: 290, base: 3900, color: 0xc9a227 },
+      { id: "wh-a", name: "West Harmon Grandstand", a0: 220, a1: 250, base: 720, color: 0x5f7fc0 },
+      { id: "wh-b", name: "West Harmon Grandstand", a0: 290, a1: 320, base: 720, color: 0x5f7fc0 },
+      { id: "t3-a", name: "Turn 3 Grandstand", a0: 158, a1: 202, base: 690, color: 0x4a9e6d },
+      { id: "t3-b", name: "Turn 3 Grandstand", a0: 338, a1: 382, base: 690, color: 0x4a9e6d },
+    ],
+    rings: F1RINGS,
+    card: `<div class="team home" style="background:#7a3fa0"><span class="abbr">LV</span><span class="tname">Las Vegas Grand Prix</span><span class="tcity">Strip Circuit · Night</span></div>
+      <div class="vs">F1<br><span>NOV<br>2027</span></div>
+      <div class="team away"><span class="abbr">USA</span><span class="tname">North America Leg</span><span class="tcity">2 of 3</span></div>`,
+  },
+  {
+    id: "f1-austin", tab: "🏎 F1 Austin", kind: "f1", currency: "$",
+    venue: "Circuit of the Americas — Demo Survey", city: "Austin, Texas",
+    ringLabel: "Row band", centerColor: 0x44503f,
+    banner: "🏎 <strong>Formula 1 — United States Grand Prix, Austin</strong> · October 2027 · COTA — the third North American leg",
+    receipt: "F1 US Grand Prix — Austin · October 2027 (demo event)",
+    sectors: [
+      { id: "cota-main", name: "Main Grandstand", a0: 70, a1: 110, base: 620, color: 0xb03a2e },
+      { id: "cota-t1a", name: "Turn 1 Grandstand", a0: 40, a1: 70, base: 540, color: 0xc05040 },
+      { id: "cota-t1b", name: "Turn 1 Grandstand", a0: 110, a1: 140, base: 540, color: 0xc05040 },
+      { id: "cota-t15a", name: "Turn 15 Grandstand", a0: 22, a1: 40, base: 480, color: 0x2e6fb7 },
+      { id: "cota-t15b", name: "Turn 15 Grandstand", a0: 140, a1: 158, base: 480, color: 0x2e6fb7 },
+      { id: "cota-club", name: "COTA Club Hospitality", a0: 250, a1: 290, base: 2600, color: 0xc9a227 },
+      { id: "cota-t12a", name: "Turn 12 Grandstand", a0: 220, a1: 250, base: 450, color: 0x4a8ac4 },
+      { id: "cota-t12b", name: "Turn 12 Grandstand", a0: 290, a1: 320, base: 450, color: 0x4a8ac4 },
+      { id: "cota-ga-a", name: "GA Hill", a0: 158, a1: 202, base: 210, color: 0x3f9e4d },
+      { id: "cota-ga-b", name: "GA Hill", a0: 338, a1: 382, base: 210, color: 0x3f9e4d },
+    ],
+    rings: F1RINGS,
+    card: `<div class="team home" style="background:#b03a2e"><span class="abbr">ATX</span><span class="tname">US Grand Prix</span><span class="tcity">COTA · Austin</span></div>
+      <div class="vs">F1<br><span>OCT<br>2027</span></div>
+      <div class="team away"><span class="abbr">USA</span><span class="tname">North America Leg</span><span class="tcity">3 of 3</span></div>`,
+  },
+  {
+    id: "la28", tab: "🏅 LA28", kind: "la28", currency: "$",
+    venue: "LA28 Showcase — Demo Survey", city: "Los Angeles",
+    ringLabel: "Tier", centerColor: 0x2e6fb7,
+    banner: "🏅 <strong>LA28 Olympics — FORWARD-LOOKING</strong> · July 2028 · Our key sports: Lacrosse Sixes · Surfing · Basketball · Swimming &amp; Diving — seat selection built in from the start",
+    receipt: "LA28 Olympics · July 2028 (forward-looking demo)",
+    sectors: [
+      { id: "lax-g", name: "Lacrosse Sixes — Grandstand", a0: 70, a1: 110, base: 320, color: 0x3f9e4d },
+      { id: "lax-p-a", name: "Lacrosse Sixes — Premium", a0: 40, a1: 70, base: 480, color: 0x57b368 },
+      { id: "lax-p-b", name: "Lacrosse Sixes — Premium", a0: 110, a1: 140, base: 480, color: 0x57b368 },
+      { id: "swim-a", name: "Swimming — Finals Grandstand", a0: 22, a1: 40, base: 540, color: 0x2e6fb7 },
+      { id: "swim-b", name: "Diving — Tower View", a0: 140, a1: 158, base: 460, color: 0x2e8fb7 },
+      { id: "aqua", name: "Aquatics — Pool Deck Premium", a0: 250, a1: 290, base: 890, color: 0x27a3c4 },
+      { id: "bb-a", name: "Basketball — Lower Bowl", a0: 220, a1: 250, base: 650, color: 0xd94f04 },
+      { id: "bb-b", name: "Basketball — Lower Bowl", a0: 290, a1: 320, base: 650, color: 0xd94f04 },
+      { id: "surf-a", name: "Surfing — Trestles Premium", a0: 158, a1: 202, base: 210, color: 0xe0a51c },
+      { id: "surf-b", name: "Surfing — Trestles Premium", a0: 338, a1: 382, base: 210, color: 0xe0a51c },
+    ],
+    rings: null,
+    card: `<div class="team home" style="background:#1a1a1a"><span class="abbr">LA28</span><span class="tname">Olympic Games</span><span class="tcity">Los Angeles</span></div>
+      <div class="vs">2028<br><span>JUL<br>2028</span></div>
+      <div class="team away"><span class="abbr">🏅</span><span class="tname">Key Sports</span><span class="tcity">Sixes · Surf · Hoops · Aquatics</span></div>`,
+  }
+);
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -627,12 +728,18 @@ function provenance(t) {
     `<li><strong>${h.kind}:</strong> ${short(h.from)} → ${short(h.to)}<br><span class="hash">tx ${h.hash}</span></li>`).join("")}</ul>`;
 }
 
+// Mock secondary index: the premium the secondary market currently puts on a
+// ticket over its primary (launch) price — deterministic per ticket (demo).
+function secIndex(t) { return Math.round(t.price * (1.12 + (t.id % 34) / 100)); }
+function secPct(t) { return Math.round((secIndex(t) / t.price - 1) * 100); }
+
 function renderMarket() {
   const mine = MARKET.tickets.filter((t) => MARKET.wallet && t.owner === MARKET.wallet);
   document.getElementById("myTickets").innerHTML = mine.length ? mine.map((t) => `
     <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring} · ${CUR}${t.price}<br>
     <span class="badge">✓ REE + TEE ATTESTED (MOCK)</span> <span class="badge mockb">ISSUED BY UZEMARKETS</span><br>
     <span class="hash">REE receipt ${t.ree}</span><br>
+    Primary (launch) price: <strong>${CUR}${t.price}</strong> · Secondary index now: <strong>${CUR}${secIndex(t)}</strong> <span class="prize">(+${secPct(t)}% hold margin)</span><br>
     ${t.listed ? `<em>Listed for resale at ${CUR}${t.listed}</em>` :
       `<button class="list" data-list="${t.id}">List for resale</button>`}
     </div>`).join("")
@@ -652,7 +759,7 @@ function renderMarket() {
 
   document.querySelectorAll("[data-list]").forEach((b) => b.addEventListener("click", () => {
     const t = MARKET.tickets.find((x) => x.id === Number(b.dataset.list));
-    const ask = prompt("Resale asking price?", String(Math.round(t.price * 1.2)));
+    const ask = prompt("Resale asking price?", String(secIndex(t)));
     if (ask && Number(ask) > 0) { t.listed = Number(ask); renderMarket(); }
   }));
   document.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => {
