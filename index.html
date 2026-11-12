@@ -176,7 +176,7 @@
     <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
   </div>
 </section>
-<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v5 (walkway rings + seat-map treads). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
+<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v6 (higher overview clears the roofline; full pitch markings). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
@@ -426,7 +426,7 @@ scene.background = new THREE.Color(0x101418);
 scene.fog = new THREE.Fog(0x101418, 500, 1200);
 
 const camera = new THREE.PerspectiveCamera(50, canvasWrap.clientWidth / canvasWrap.clientHeight, 0.1, 1000);
-camera.position.set(150, 110, 150);
+camera.position.set(175, 165, 175);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(canvasWrap.clientWidth, canvasWrap.clientHeight);
@@ -454,8 +454,14 @@ const pitch = new THREE.Mesh(new THREE.BoxGeometry(68, 1, 44), pitchMat);
 pitch.position.y = 0.5;
 pitch.receiveShadow = true;
 scene.add(pitch);
+const centreCircle = new THREE.Mesh(
+  new THREE.RingGeometry(7.4, 8.1, 40),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+);
+centreCircle.rotation.x = -Math.PI / 2; centreCircle.position.y = 1.06; scene.add(centreCircle);
 const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-[[0, 0, 68, 0.6], [0, 0, 0.6, 44]].forEach(([x, z, w, d]) => {
+[[0, 0, 68, 0.6], [0, 0, 0.6, 44],
+ [0, -22, 68, 0.7], [0, 22, 68, 0.7], [-34, 0, 0.7, 44], [34, 0, 0.7, 44]].forEach(([x, z, w, d]) => {
   const l = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d), lineMat);
   l.position.set(x, 1.05, z);
   scene.add(l);
@@ -723,7 +729,7 @@ flowBack.addEventListener("click", () => {
     inSeatView = false; selected = null; assignment = null;
     renderList(); renderDetail();
     setRoof(true);
-    flyTo(new THREE.Vector3(150, 110, 150), new THREE.Vector3(0, 4, 0));
+    flyTo(new THREE.Vector3(175, 165, 175), new THREE.Vector3(0, 4, 0));
     flowbar.classList.add("hidden");
   }
 });
@@ -733,7 +739,7 @@ document.getElementById("flowNext").addEventListener("click", () => {
 document.getElementById("viewOverview").addEventListener("click", () => {
   inSeatView = false;
   setRoof(true);
-  flyTo(new THREE.Vector3(150, 110, 150), new THREE.Vector3(0, 4, 0));
+  flyTo(new THREE.Vector3(175, 165, 175), new THREE.Vector3(0, 4, 0));
   if (!selected && flowbar) flowbar.classList.add("hidden");
 });
 document.getElementById("viewTop").addEventListener("click", () => {
