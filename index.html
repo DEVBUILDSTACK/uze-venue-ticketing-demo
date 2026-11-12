@@ -99,7 +99,7 @@
     <div class="viewbar">
       <button id="viewOverview">Overview — orbit view</button>
       <button id="viewTop">Top view — seat map</button>
-      <span class="viewhint">This is the 3D venue map: drag to spin it, scroll or pinch to zoom, tap a coloured sector and the camera flies in to show the view from those seats.</span>
+      <span class="viewhint">This is the 3D venue map: drag to spin it, tap a coloured sector and the camera flies in to show the view from those seats.</span>
     </div>
   </div>
   <aside>
@@ -318,6 +318,7 @@ canvasWrap.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.enableZoom = false; // wheel/pinch must scroll the PAGE, not trap it in the canvas (verified issue, 2026-11-12); fly-to on sector tap provides the close-up
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.minDistance = 25;
 controls.maxDistance = 320;
@@ -329,7 +330,7 @@ sun.castShadow = true;
 scene.add(sun);
 
 // --- Pitch -----------------------------------------------------------------
-const pitchMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1 });
+const pitchMat = new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 1 });
 const pitch = new THREE.Mesh(new THREE.BoxGeometry(68, 1, 44), pitchMat);
 pitch.position.y = 0.5;
 pitch.receiveShadow = true;
