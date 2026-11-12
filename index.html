@@ -72,6 +72,11 @@
   .prov { margin:6px 0 0; padding-left:16px; font-size:12px; line-height:1.6; }
   select.vsel { width:100%; padding:7px; border-radius:7px; border:1px solid var(--line); margin-bottom:8px; }
   .viewhint { font-size:12px; opacity:.75; max-width:520px; line-height:1.45; }
+  .callit { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:14px; }
+  .callit input[type=number] { width:130px; padding:8px; border-radius:8px; border:1px solid var(--line); font-size:14px; }
+  table.board { width:100%; border-collapse:collapse; font-size:13px; }
+  table.board td, table.board th { padding:6px 4px; border-bottom:1px solid var(--line); text-align:left; }
+  .prize { font-weight:bold; color:#b97a06; }
   footer { padding:10px 22px; font-family:Helvetica,Arial,sans-serif; font-size:12px; opacity:.7; border-top:1px solid var(--line); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } aside { border-left:none; border-top:1px solid var(--line); } }
 </style>
@@ -133,6 +138,27 @@
 </section>
 
 <div id="tip"></div>
+
+<section class="market" id="callit">
+  <h2>📈 UZE Event Market — Call It <span class="mocktag">MOCK</span></h2>
+  <p class="sub">For big fixtures, the market itself becomes the game. Call the price <strong>Tribuna Central (Lower Ring)</strong>
+  will settle at in the secondary market by match week for <strong>Internacional vs São Paulo FC</strong>. When the market settles,
+  the <strong>two closest calls</strong> win tickets: closest call takes the <span class="prize">grand prize — a PAIR of tickets</span>;
+  second closest takes the <span class="prize">consolation — a SINGLE ticket</span>. Prize tickets are minted as the same attested
+  NFTs, straight into the winner's wallet. Every call is a signal the supply side prices against — demand, revealed before on-sale.
+  Positions bridge in via <strong>NEAR Intents</strong> (mocked here).</p>
+  <div class="callit">
+    <div class="mcard"><h3>🎯 Make your call</h3>
+      <p class="hint">Your call (R$):</p>
+      <input type="number" id="callInput" min="50" max="5000" step="1" placeholder="e.g. 600">
+      <button class="wbtn" id="callBtn" style="margin-left:8px">Submit call</button>
+      <p class="hint" id="callStatus" style="margin-top:8px">Connect your wallet above, then call the settled price. One call per wallet in this mock.</p>
+      <button class="wbtn" id="settleBtn" style="background:var(--tang); margin-top:6px">Settle the market (mock)</button>
+      <p class="hint" id="settleOut" style="margin-top:8px"></p>
+    </div>
+    <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
+  </div>
+</section>
 <footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · scroll to zoom · click a sector to fly to it. Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
@@ -651,6 +677,64 @@ function showVerify(id) {
 document.getElementById("verifySel").addEventListener("change", (e) => showVerify(Number(e.target.value)));
 seedResale();
 renderMarket();
+
+// --- UZE EVENT MARKET (MOCK) -------------------------------------------------
+// Branding (James, 2026-11-12): the product is the UZE Event Market — the
+// underlying market plumbing is never branded. Mechanic: call the settled
+// secondary price; on settlement the two closest calls win tickets — closest
+// wins a PAIR (grand prize), second closest a SINGLE (consolation), minted as
+// the same attested NFTs into the winner's wallet.
+const EVENT_MARKET = {
+  settled: false,
+  settledPrice: 612, // mock settlement — production: the actual secondary clearing price
+  calls: [
+    { addr: newAddr(), call: 540 }, { addr: newAddr(), call: 588 },
+    { addr: newAddr(), call: 645 }, { addr: newAddr(), call: 701 },
+    { addr: newAddr(), call: 488 },
+  ],
+};
+function renderBoard() {
+  const rows = [...EVENT_MARKET.calls].sort((x, y) =>
+    EVENT_MARKET.settled
+      ? Math.abs(x.call - EVENT_MARKET.settledPrice) - Math.abs(y.call - EVENT_MARKET.settledPrice)
+      : x.call - y.call);
+  const prizeOf = (i) => !EVENT_MARKET.settled ? "" :
+    i === 0 ? '<span class="prize">🥇 PAIR OF TICKETS — GRAND PRIZE</span>' :
+    i === 1 ? '<span class="prize">🥈 SINGLE TICKET — CONSOLATION</span>' : "";
+  document.getElementById("board").innerHTML =
+    `<table class="board"><tr><th>Wallet</th><th>Call (R$)</th>${EVENT_MARKET.settled ? "<th>Off by</th><th></th>" : ""}</tr>` +
+    rows.map((c, i) => `<tr><td>${short(c.addr)}${MARKET.wallet && c.addr === MARKET.wallet ? " (you)" : ""}</td><td><strong>${c.call}</strong></td>` +
+      (EVENT_MARKET.settled ? `<td>${Math.abs(c.call - EVENT_MARKET.settledPrice)}</td><td>${prizeOf(i)}</td>` : "") + `</tr>`).join("") +
+    `</table>` + (EVENT_MARKET.settled ? `<p class="hint" style="margin-top:6px">Settled at <strong>R$${EVENT_MARKET.settledPrice}</strong> (mock settlement).</p>` : "");
+}
+document.getElementById("callBtn").addEventListener("click", () => {
+  if (!MARKET.wallet) connectWallet();
+  const v = Number(document.getElementById("callInput").value);
+  const st = document.getElementById("callStatus");
+  if (!v || v < 50) { st.textContent = "Enter a call of at least R$50."; return; }
+  const mine = EVENT_MARKET.calls.find((c) => c.addr === MARKET.wallet);
+  if (mine) mine.call = v; else EVENT_MARKET.calls.push({ addr: MARKET.wallet, call: v });
+  st.textContent = `Call recorded: R$${v} from your wallet. Settle the market to see if you take the pair.`;
+  renderBoard();
+});
+document.getElementById("settleBtn").addEventListener("click", (e) => {
+  if (EVENT_MARKET.settled) return;
+  EVENT_MARKET.settled = true;
+  e.target.disabled = true; e.target.textContent = "Market settled";
+  const ranked = [...EVENT_MARKET.calls].sort((x, y) =>
+    Math.abs(x.call - EVENT_MARKET.settledPrice) - Math.abs(y.call - EVENT_MARKET.settledPrice));
+  const out = document.getElementById("settleOut");
+  let msg = `Settled at R$${EVENT_MARKET.settledPrice}. Closest call: ${short(ranked[0].addr)} (R$${ranked[0].call}) wins the PAIR. Second: ${short(ranked[1].addr)} (R$${ranked[1].call}) wins a SINGLE.`;
+  if (MARKET.wallet) {
+    const myRank = ranked.findIndex((c) => c.addr === MARKET.wallet);
+    if (myRank === 0) { mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice); mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice); msg += " 🏆 That's YOU — two prize NFTs minted to your wallet (see My tickets above)."; }
+    else if (myRank === 1) { mintTicket({ name: "Tribuna Central" }, { name: "Lower Ring" }, EVENT_MARKET.settledPrice); msg += " 🥈 That's YOU — one prize NFT minted to your wallet (see My tickets above)."; }
+    else if (myRank > 1) msg += ` Your call placed #${myRank + 1} — no prize this time.`;
+  }
+  out.innerHTML = msg;
+  renderBoard();
+});
+renderBoard();
 
 </script>
 </body>
