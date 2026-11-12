@@ -24,6 +24,9 @@
   .viewbar button, .ghost { font-family:Helvetica,Arial,sans-serif; font-size:12px; padding:7px 12px; border-radius:999px;
     border:1px solid var(--line); background:#fff; cursor:pointer; }
   aside { border-left:1px solid var(--line); background:var(--panel); padding:16px; overflow:auto; }
+  .evtabs { display:flex; gap:8px; margin-bottom:12px; }
+  .evtabs button { flex:1; font-family:Helvetica,Arial,sans-serif; font-size:13px; padding:9px 6px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .evtabs button.active { background:var(--ink); color:#fff; border-color:var(--ink); }
   .matchcard { display:flex; align-items:stretch; gap:8px; margin-bottom:8px; }
   .matchcard .team { flex:1; border-radius:10px; padding:10px; text-align:center; font-family:Helvetica,Arial,sans-serif; }
   .matchcard .home { background:#e30613; color:#fff; }
@@ -84,7 +87,7 @@
   <span class="venue" id="venueName"></span>
   <span class="mockbanner">🟡 BUILT AS MOCK — NO LIVE INVENTORY · NO REAL SETTLEMENT</span>
 </header>
-<div class="fixture"><span class="demo">DEMO FIXTURE</span><span><strong>Internacional</strong> (Porto Alegre) vs <strong>São Paulo FC</strong> · January 2027 · Venue selector demo for the Brazil focus</span></div>
+<div class="fixture"><span class="demo">DEMO EVENT</span><span id="fixtureText"><strong>Internacional</strong> (Porto Alegre) vs <strong>São Paulo FC</strong> · January 2027 · Venue selector demo for the Brazil focus</span></div>
 <main>
   <div id="scene">
     <div class="viewbar">
@@ -93,7 +96,8 @@
     </div>
   </div>
   <aside>
-    <div class="matchcard">
+    <div id="eventTabs" class="evtabs"></div>
+    <div class="matchcard" id="eventCard">
       <div class="team home"><span class="abbr">INTER</span><span class="tname">Internacional</span><span class="tcity">Porto Alegre</span></div>
       <div class="vs">VS<br><span>JAN<br>2027</span></div>
       <div class="team away"><span class="abbr">SPFC</span><span class="tname">São Paulo FC</span><span class="tcity">São Paulo</span></div>
@@ -107,6 +111,7 @@
 </main>
 <section class="market">
   <h2>Primary &amp; Secondary Market <span class="mocktag">MOCK</span></h2>
+  <p class="sub">Built for Brazil's play market — <strong>soccer, music, and large tech conventions</strong> — with secondary sales and partner referrals across Brazil, Central America, and the Caribbean.</p>
   <p class="sub">Every ticket is an <strong>NFT on LightLink (EVM)</strong>, held in the buyer's own wallet — no affiliate account needed.
   At mint, the sale is sealed with an <strong>REE receipt</strong> and a <strong>TEE attestation</strong> that the ticket was issued by
   <strong>UZEmarkets</strong> — so any later buyer can verify the ticket is genuine and trace the original NFT from the first
@@ -174,13 +179,87 @@ function sectorPrice(sector, ring) {
   return Math.round(sector.base * ring.factor);
 }
 
-function fromPrice(sector) {
-  return Math.min(...RINGS.map((r) => sectorPrice(sector, r)));
+function fromPrice(sector, rings = RINGS) {
+  return Math.min(...rings.map((r) => sectorPrice(sector, r)));
 }
+
+// ---------------------------------------------------------------------------
+// EVENTS — the Brazil play-market demo set: soccer, music, tech convention.
+// Each event swaps the sector table (and optionally rings/currency/venue);
+// the selector machinery is identical. Prices are mock.
+// ---------------------------------------------------------------------------
+const EVENTS = [
+  {
+    id: "soccer", tab: "⚽ Soccer", kind: "soccer", currency: "R$",
+    venue: "Estádio Beira-Rio — Demo Survey", city: "Porto Alegre",
+    ringLabel: "Ring", centerColor: 0x2f7d32,
+    banner: "<strong>Internacional</strong> (Porto Alegre) vs <strong>São Paulo FC</strong> · January 2027 · Venue selector demo for the Brazil focus",
+    receipt: "Internacional vs São Paulo FC · January 2027 (demo fixture)",
+    sectors: SECTORS, rings: null,
+    card: `<div class="team home"><span class="abbr">INTER</span><span class="tname">Internacional</span><span class="tcity">Porto Alegre</span></div>
+      <div class="vs">VS<br><span>JAN<br>2027</span></div>
+      <div class="team away"><span class="abbr">SPFC</span><span class="tname">São Paulo FC</span><span class="tcity">São Paulo</span></div>`,
+  },
+  {
+    id: "music", tab: "🎵 Music", kind: "music", currency: "R$",
+    venue: "Arena Bowl — Demo Survey", city: "Porto Alegre",
+    ringLabel: "Tier", centerColor: 0x1c1c22,
+    banner: "🎵 <strong>Porto Alegre Music Nights</strong> · May 2027 · Arena bowl selector — music &amp; large spectator events",
+    receipt: "Porto Alegre Music Nights · May 2027 (demo event)",
+    sectors: [
+      { id: "front-stage", name: "Palco — Front Stage", a0: 70, a1: 110, base: 690, color: 0x7a3fa0 },
+      { id: "pista-prem-a", name: "Pista Premium", a0: 40, a1: 70, base: 420, color: 0x9a5fc0 },
+      { id: "pista-prem-b", name: "Pista Premium", a0: 110, a1: 140, base: 420, color: 0x9a5fc0 },
+      { id: "arq-a", name: "Arquibancada", a0: 22, a1: 40, base: 240, color: 0xb08fd0 },
+      { id: "arq-b", name: "Arquibancada", a0: 140, a1: 158, base: 240, color: 0xb08fd0 },
+      { id: "camarote", name: "Camarote VIP", a0: 250, a1: 290, base: 890, color: 0xc9a227 },
+      { id: "pista-a", name: "Pista", a0: 202, a1: 220, base: 290, color: 0x5f7fc0 },
+      { id: "pista-b", name: "Pista", a0: 320, a1: 338, base: 290, color: 0x5f7fc0 },
+      { id: "fundo-a", name: "Fundo — Back Bowl", a0: 158, a1: 202, base: 210, color: 0x4a9e6d },
+      { id: "fundo-b", name: "Fundo — Back Bowl", a0: 338, a1: 382, base: 210, color: 0x4a9e6d },
+    ],
+    rings: null,
+    card: `<div class="team home" style="background:#7a3fa0"><span class="abbr">MUSIC</span><span class="tname">Porto Alegre Music Nights</span><span class="tcity">Arena Bowl</span></div>
+      <div class="vs">LIVE<br><span>MAY<br>2027</span></div>
+      <div class="team away"><span class="abbr">🎵</span><span class="tname">Headliner TBA</span><span class="tcity">Porto Alegre</span></div>`,
+  },
+  {
+    id: "summit", tab: "🎤 Tech Convention", kind: "summit", currency: "R$",
+    venue: "Cais Embarcadero — Demo Survey", city: "Porto Alegre",
+    ringLabel: "Pass tier", centerColor: 0x9aa0a8,
+    banner: "🎤 <strong>South Summit Brazil 2027</strong> · April 14–16, 2027 · Cais Embarcadero, Porto Alegre — the spring tech convention in Bruno's home city",
+    receipt: "South Summit Brazil 2027 · April 14–16, 2027 (demo event)",
+    sectors: [
+      { id: "plenary", name: "Plenary — Main Stage", a0: 70, a1: 110, base: 1490, color: 0xd94f04 },
+      { id: "comp-a", name: "Startup Competition Arena", a0: 40, a1: 70, base: 990, color: 0xe86a1c },
+      { id: "comp-b", name: "Startup Competition Arena", a0: 110, a1: 140, base: 990, color: 0xe86a1c },
+      { id: "expo-a", name: "Expo Floor", a0: 22, a1: 40, base: 490, color: 0x2e6fb7 },
+      { id: "expo-b", name: "Expo Floor", a0: 140, a1: 158, base: 490, color: 0x2e6fb7 },
+      { id: "investor", name: "Investor Lounge", a0: 250, a1: 290, base: 2990, color: 0xc9a227 },
+      { id: "work-a", name: "Workshop Wing", a0: 220, a1: 250, base: 790, color: 0x4a8ac4 },
+      { id: "work-b", name: "Workshop Wing", a0: 290, a1: 320, base: 790, color: 0x4a8ac4 },
+      { id: "net-a", name: "Networking Terrace", a0: 158, a1: 202, base: 590, color: 0x3f9e4d },
+      { id: "net-b", name: "Networking Terrace", a0: 338, a1: 382, base: 590, color: 0x3f9e4d },
+    ],
+    rings: [
+      { id: "t1", name: "Attendee Pass", d0: 30, d1: 48, h0: 1, h1: 13, factor: 1.0, open: true },
+      { id: "t2", name: "Startup Pass", d0: 50, d1: 66, h0: 15, h1: 29, factor: 1.35, open: true },
+      { id: "t3", name: "Executive Pass", d0: 68, d1: 84, h0: 31, h1: 46, factor: 2.1, open: false },
+    ],
+    card: `<div class="team home" style="background:#1a1a1a"><span class="abbr">SOUTH</span><span class="tname">Summit Brazil 2027</span><span class="tcity">Cais Embarcadero</span></div>
+      <div class="vs">TECH<br><span>APR 14–16<br>2027</span></div>
+      <div class="team away"><span class="abbr">POA</span><span class="tname">Porto Alegre</span><span class="tcity">Rio Grande do Sul</span></div>`,
+  },
+];
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
+
+let ACTIVE_SECTORS = SECTORS;
+let ACTIVE_RINGS = RINGS;
+let CUR = "R$";
+let EVENT = EVENTS[0];
 
 // ---------------------------------------------------------------------------
 // UZE Venue Ticketing — mock-up.
@@ -222,10 +301,8 @@ sun.castShadow = true;
 scene.add(sun);
 
 // --- Pitch -----------------------------------------------------------------
-const pitch = new THREE.Mesh(
-  new THREE.BoxGeometry(68, 1, 44),
-  new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1 })
-);
+const pitchMat = new THREE.MeshStandardMaterial({ color: 0x2f7d32, roughness: 1 });
+const pitch = new THREE.Mesh(new THREE.BoxGeometry(68, 1, 44), pitchMat);
 pitch.position.y = 0.5;
 pitch.receiveShadow = true;
 scene.add(pitch);
@@ -237,14 +314,19 @@ const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 });
 
 // --- Bowl: one segment mesh per (ring, sector) ------------------------------
+const bowlGroup = new THREE.Group();
+scene.add(bowlGroup);
 const pickables = [];
 const sectorMeshes = new Map(); // sectorId -> meshes[]
 
 function buildBowl() {
-  for (const ring of RINGS) {
+  while (bowlGroup.children.length) bowlGroup.remove(bowlGroup.children[0]);
+  pickables.length = 0;
+  sectorMeshes.clear();
+  for (const ring of ACTIVE_RINGS) {
     const rMid = (ring.d0 + ring.d1) / 2;
     const height = ring.h1 - ring.h0;
-    for (const sector of SECTORS) {
+    for (const sector of ACTIVE_SECTORS) {
       const a0 = THREE.MathUtils.degToRad(sector.a0);
       const a1 = THREE.MathUtils.degToRad(sector.a1);
       const geo = new THREE.CylinderGeometry(
@@ -257,7 +339,7 @@ function buildBowl() {
       mesh.position.y = ring.h0 + height / 2;
       mesh.castShadow = true;
       mesh.userData = { sectorId: sector.id, ringId: ring.id };
-      scene.add(mesh);
+      bowlGroup.add(mesh);
       pickables.push(mesh);
       if (!sectorMeshes.has(sector.id)) sectorMeshes.set(sector.id, []);
       sectorMeshes.get(sector.id).push(mesh);
@@ -268,7 +350,7 @@ function buildBowl() {
       new THREE.MeshStandardMaterial({ color: 0x3a4149, roughness: 1 })
     );
     walk.position.y = ring.h0 - 0.4;
-    scene.add(walk);
+    bowlGroup.add(walk);
   }
 }
 buildBowl();
@@ -280,12 +362,12 @@ let qty = 2;
 
 function renderList() {
   listEl.innerHTML = "";
-  for (const s of SECTORS) {
+  for (const s of ACTIVE_SECTORS) {
     const row = document.createElement("button");
     row.className = "item" + (selected && selected.id === s.id ? " active" : "");
     row.dataset.sector = s.id;
     row.innerHTML = `<span class="swatch" style="background:#${s.color.toString(16).padStart(6, "0")}"></span>
-      <span class="nm">${s.name}</span><span class="pr">from €${fromPrice(s)}</span>`;
+      <span class="nm">${s.name}</span><span class="pr">from ${CUR}${fromPrice(s, ACTIVE_RINGS)}</span>`;
     row.addEventListener("click", () => selectSector(s, true));
     row.addEventListener("mouseenter", () => highlight(s, true));
     row.addEventListener("mouseleave", () => highlight(s, false));
@@ -317,23 +399,23 @@ function renderDetail() {
   const price = sectorPrice(selected, selectedRing);
   detailEl.innerHTML = `
     <h3>${selected.name}</h3>
-    <label class="ring-label">Ring
-      <select id="ringSel">${RINGS.map((r) => `<option value="${r.id}" ${r.id === selectedRing.id ? "selected" : ""}>${r.name} — €${sectorPrice(selected, r)}</option>`).join("")}</select>
+    <label class="ring-label">${EVENT.ringLabel}
+      <select id="ringSel">${ACTIVE_RINGS.map((r) => `<option value="${r.id}" ${r.id === selectedRing.id ? "selected" : ""}>${r.name} — ${CUR}${sectorPrice(selected, r)}</option>`).join("")}</select>
     </label>
     <div class="qtyrow">
       <button id="qMinus" aria-label=" fewer">−</button>
       <span id="qVal">${qty}</span>
       <button id="qPlus" aria-label="more">+</button>
-      <span class="unit">× €${price}</span>
+      <span class="unit">× ${CUR}${price}</span>
     </div>
-    <div class="total">Total <strong>€${price * qty}</strong> <span class="mocktag">MOCK PRICES</span></div>
+    <div class="total">Total <strong>${CUR}${price * qty}</strong> <span class="mocktag">MOCK PRICES</span></div>
     <div class="btnrow">
       <button id="seatBtn" class="ghost">Seat view</button>
       <button id="buyBtn" class="cta">Mock checkout</button>
     </div>
     <div id="receipt"></div>`;
   document.getElementById("ringSel").addEventListener("change", (e) => {
-    selectedRing = RINGS.find((r) => r.id === e.target.value);
+    selectedRing = ACTIVE_RINGS.find((r) => r.id === e.target.value);
     renderDetail();
   });
   document.getElementById("qMinus").addEventListener("click", () => { qty = Math.max(1, qty - 1); renderDetail(); });
@@ -348,8 +430,8 @@ function mockCheckout() {
   const ref = "MOCK-" + Math.random().toString(36).slice(2, 8).toUpperCase();
   el.innerHTML = `<div class="receipt">
     <strong>Mock order ${ref}</strong><br>
-    ${qty} × ${selected.name} · ${selectedRing.name} — €${sectorPrice(selected, selectedRing) * qty}<br>
-    Event: Internacional vs São Paulo FC · January 2027 (demo fixture)<br>
+    ${qty} × ${selected.name} · ${selectedRing.name} — ${CUR}${sectorPrice(selected, selectedRing) * qty}<br>
+    Event: ${EVENT.receipt}<br>
     <span class="mocktag">MOCK SETTLEMENT</span> NFT Ticket #${minted.id} minted to your wallet — see “My tickets” below. In production this settles in USDC
     on Solana with GIRAx attestation of the ticket. No funds move in this mock-up.
   </div>`;
@@ -389,7 +471,7 @@ renderer.domElement.addEventListener("pointermove", (e) => {
   ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(ndc, camera);
   const hit = raycaster.intersectObjects(pickables, false)[0];
-  const sector = hit ? SECTORS.find((s) => s.id === hit.object.userData.sectorId) : null;
+  const sector = hit ? ACTIVE_SECTORS.find((s) => s.id === hit.object.userData.sectorId) : null;
   if (hovered && hovered !== sector) highlight(hovered, false);
   hovered = sector;
   if (sector) {
@@ -397,7 +479,7 @@ renderer.domElement.addEventListener("pointermove", (e) => {
     tooltip.style.display = "block";
     tooltip.style.left = e.clientX + 14 + "px";
     tooltip.style.top = e.clientY + 10 + "px";
-    tooltip.textContent = `${sector.name} — from €${fromPrice(sector)}`;
+    tooltip.textContent = `${sector.name} — from ${CUR}${fromPrice(sector, ACTIVE_RINGS)}`;
     renderer.domElement.style.cursor = "pointer";
   } else {
     tooltip.style.display = "none";
@@ -406,7 +488,7 @@ renderer.domElement.addEventListener("pointermove", (e) => {
 });
 renderer.domElement.addEventListener("click", () => {
   if (!hovered) return;
-  selectedRing = RINGS.find((r) => r.id === (raycaster.intersectObjects(pickables, false)[0]?.object.userData.ringId)) || selectedRing;
+  selectedRing = ACTIVE_RINGS.find((r) => r.id === (raycaster.intersectObjects(pickables, false)[0]?.object.userData.ringId)) || selectedRing;
   selectSector(hovered, true);
 });
 
@@ -429,7 +511,34 @@ window.addEventListener("resize", () => {
   renderer.setSize(canvasWrap.clientWidth, canvasWrap.clientHeight);
 });
 
-document.getElementById("venueName").textContent = `${VENUE.name} — ${VENUE.city}`;
+// --- Event switcher (soccer / music / tech convention) -----------------------
+function setEvent(ev) {
+  EVENT = ev;
+  ACTIVE_SECTORS = ev.sectors;
+  ACTIVE_RINGS = ev.rings || RINGS;
+  CUR = ev.currency;
+  selected = null;
+  selectedRing = ACTIVE_RINGS[0];
+  pitchMat.color.setHex(ev.centerColor);
+  document.getElementById("venueName").textContent = `${ev.venue} — ${ev.city}`;
+  document.getElementById("fixtureText").innerHTML = ev.banner;
+  document.getElementById("eventCard").innerHTML = ev.card;
+  document.querySelectorAll("#eventTabs button").forEach((b) =>
+    b.classList.toggle("active", b.dataset.event === ev.id));
+  buildBowl();
+  renderList();
+  renderDetail();
+}
+const tabsEl = document.getElementById("eventTabs");
+if (tabsEl) {
+  tabsEl.innerHTML = EVENTS.map((e) =>
+    `<button type="button" data-event="${e.id}">${e.tab}</button>`).join("");
+  tabsEl.querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => setEvent(EVENTS.find((e) => e.id === b.dataset.event))));
+  tabsEl.querySelector("button")?.classList.add("active");
+}
+
+document.getElementById("venueName").textContent = `${EVENT.venue} — ${EVENT.city}`;
 renderList();
 renderDetail();
 tick();
@@ -492,10 +601,10 @@ function provenance(t) {
 function renderMarket() {
   const mine = MARKET.tickets.filter((t) => MARKET.wallet && t.owner === MARKET.wallet);
   document.getElementById("myTickets").innerHTML = mine.length ? mine.map((t) => `
-    <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring} · €${t.price}<br>
+    <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring} · ${CUR}${t.price}<br>
     <span class="badge">✓ REE + TEE ATTESTED (MOCK)</span> <span class="badge mockb">ISSUED BY UZEMARKETS</span><br>
     <span class="hash">REE receipt ${t.ree}</span><br>
-    ${t.listed ? `<em>Listed for resale at €${t.listed}</em>` :
+    ${t.listed ? `<em>Listed for resale at ${CUR}${t.listed}</em>` :
       `<button class="list" data-list="${t.id}">List for resale</button>`}
     </div>`).join("")
     : `<p class="hint">No tickets yet — mint one with “Mock checkout” above.</p>`;
@@ -503,7 +612,7 @@ function renderMarket() {
   const resale = MARKET.tickets.filter((t) => t.listed && t.owner !== MARKET.wallet);
   document.getElementById("resaleList").innerHTML = resale.length ? resale.map((t) => `
     <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring}<br>
-    Seller <span class="addr">${short(t.owner)}</span> · <strong>€${t.listed}</strong><br>
+    Seller <span class="addr">${short(t.owner)}</span> · <strong>${CUR}${t.listed}</strong><br>
     <span class="badge">✓ PROVENANCE VERIFIABLE</span><br>
     <button class="buy" data-buy="${t.id}">Buy — NFT transfers to my wallet</button></div>`).join("")
     : `<p class="hint">No resale listings right now.</p>`;
@@ -514,14 +623,14 @@ function renderMarket() {
 
   document.querySelectorAll("[data-list]").forEach((b) => b.addEventListener("click", () => {
     const t = MARKET.tickets.find((x) => x.id === Number(b.dataset.list));
-    const ask = prompt("Resale asking price (EUR)?", String(Math.round(t.price * 1.2)));
+    const ask = prompt("Resale asking price?", String(Math.round(t.price * 1.2)));
     if (ask && Number(ask) > 0) { t.listed = Number(ask); renderMarket(); }
   }));
   document.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => {
     if (!MARKET.wallet) connectWallet();
     const t = MARKET.tickets.find((x) => x.id === Number(b.dataset.buy));
     const paid = t.listed;
-    t.history.push({ from: t.owner, to: MARKET.wallet, kind: `Secondary sale · €${paid}`, hash: "0x" + hex(32) });
+    t.history.push({ from: t.owner, to: MARKET.wallet, kind: `Secondary sale · ${CUR}${paid}`, hash: "0x" + hex(32) });
     t.owner = MARKET.wallet; t.price = paid; t.listed = null;
     renderMarket();
   }));
