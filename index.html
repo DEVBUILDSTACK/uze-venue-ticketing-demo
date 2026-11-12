@@ -84,6 +84,7 @@
   .viewhint { font-size:12px; opacity:.75; max-width:520px; line-height:1.45; }
   .callit { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:14px; }
   .callit input[type=number] { width:130px; padding:8px; border-radius:8px; border:1px solid var(--line); font-size:14px; }
+  .askIn { width:92px; padding:5px 7px; border-radius:7px; border:1px solid var(--line); font-size:13px; margin:0 4px; }
   table.board { width:100%; border-collapse:collapse; font-size:13px; }
   table.board td, table.board th { padding:6px 4px; border-bottom:1px solid var(--line); text-align:left; }
   .prize { font-weight:bold; color:#b97a06; }
@@ -176,7 +177,7 @@
     <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
   </div>
 </section>
-<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v8 (per-seat minting — one NFT per seat; tickets, listings and Event Markets scoped per event). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
+<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v9 (per-seat minting; per-event markets; inline resale ask field). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
@@ -926,7 +927,7 @@ function renderMarket() {
     <span class="hash">REE receipt ${t.ree}</span><br>
     Primary (launch) price: <strong>${CUR}${t.price}</strong> · Secondary index now: <strong>${CUR}${secIndex(t)}</strong> <span class="prize">(+${secPct(t)}% hold margin)</span><br>
     ${t.listed ? `<em>Listed for resale at ${CUR}${t.listed}</em>` :
-      `<button class="list" data-list="${t.id}">List for resale</button>`}
+      `<span class="listrow">Ask ${CUR}<input type="number" class="askIn" data-ask="${t.id}" value="${secIndex(t)}" min="1" step="1"> <button class="list" data-list="${t.id}">List for resale</button></span>`}
     </div>`).join("")
     : `<p class="hint">No tickets yet — mint one with “Mock checkout” above.</p>`;
 
@@ -945,8 +946,9 @@ function renderMarket() {
 
   document.querySelectorAll("[data-list]").forEach((b) => b.addEventListener("click", () => {
     const t = MARKET.tickets.find((x) => x.id === Number(b.dataset.list));
-    const ask = prompt("Resale asking price?", String(secIndex(t)));
-    if (ask && Number(ask) > 0) { t.listed = Number(ask); renderMarket(); }
+    const inp = document.querySelector(`[data-ask="${t.id}"]`);
+    const ask = Number(inp && inp.value);
+    if (ask > 0) { t.listed = ask; renderMarket(); }
   }));
   document.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => {
     if (!MARKET.wallet) connectWallet();
