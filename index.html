@@ -177,7 +177,7 @@
     <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
   </div>
 </section>
-<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v9 (per-seat minting; per-event markets; inline resale ask field). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
+<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v10 (per-seat minting; per-event markets; your own listings surface in the secondary market). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
@@ -931,12 +931,12 @@ function renderMarket() {
     </div>`).join("")
     : `<p class="hint">No tickets yet — mint one with “Mock checkout” above.</p>`;
 
-  const resale = MARKET.tickets.filter((t) => t.listed && t.owner !== MARKET.wallet && t.eventId === EVENT.id);
+  const resale = MARKET.tickets.filter((t) => t.listed && t.eventId === EVENT.id);
   document.getElementById("resaleList").innerHTML = resale.length ? resale.map((t) => `
-    <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring}<br>
-    Seller <span class="addr">${short(t.owner)}</span> · <strong>${CUR}${t.listed}</strong><br>
+    <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring}${t.seat ? ` · Row ${t.row} · Seat ${t.seat}` : ""}<br>
+    ${t.owner === MARKET.wallet ? `<span class="badge mockb">YOUR LISTING</span> · <strong>${CUR}${t.listed}</strong><br>` : `Seller <span class="addr">${short(t.owner)}</span> · <strong>${CUR}${t.listed}</strong><br>`}
     <span class="badge">✓ PROVENANCE VERIFIABLE</span><br>
-    <button class="buy" data-buy="${t.id}">Buy — NFT transfers to my wallet</button></div>`).join("")
+    ${t.owner === MARKET.wallet ? `<em>Your seat, live on the secondary market — the margin position, visible to every buyer here.</em>` : `<button class="buy" data-buy="${t.id}">Buy — NFT transfers to my wallet</button>`}</div>`).join("")
     : `<p class="hint">No resale listings right now.</p>`;
 
   const sel = document.getElementById("verifySel");
