@@ -176,7 +176,7 @@
     <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
   </div>
 </section>
-<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v4 (telemetry). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
+<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v5 (walkway rings + seat-map treads). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
@@ -495,12 +495,33 @@ function buildBowl() {
         sectorMeshes.get(sector.id).push(mesh);
       }
     }
-    // ring walkway
+    for (const sector of ACTIVE_SECTORS) {
+      const t0 = THREE.MathUtils.degToRad(sector.a0), t1 = THREE.MathUtils.degToRad(sector.a1);
+      const y = ring.h1 + 0.06;
+      const P = (r, t) => [Math.sin(t) * r, y, Math.cos(t) * r];
+      const quad = new Float32Array([
+        ...P(ring.d0 + 0.4, t0), ...P(ring.d1, t0), ...P(ring.d1, t1),
+        ...P(ring.d0 + 0.4, t0), ...P(ring.d1, t1), ...P(ring.d0 + 0.4, t1),
+      ]);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(quad, 3));
+      g.computeVertexNormals();
+      const col = new THREE.Color(sector.color); col.offsetHSL(0, 0, 0.07);
+      const tread = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, side: THREE.DoubleSide }));
+      tread.userData = { sectorId: sector.id, ringId: ring.id };
+      bowlGroup.add(tread);
+      pickables.push(tread);
+      if (!sectorMeshes.has(sector.id)) sectorMeshes.set(sector.id, []);
+      sectorMeshes.get(sector.id).push(tread);
+    }
+    // ring walkway — a flat RING, never a solid disc (a capped cylinder here
+    // hid the pitch and the lower bands from every elevated view).
     const walk = new THREE.Mesh(
-      new THREE.CylinderGeometry(ring.d1 + 1, ring.d1 + 1, 0.8, 64, 1, false),
-      new THREE.MeshStandardMaterial({ color: 0x3a4149, roughness: 1 })
+      new THREE.RingGeometry(Math.max(1, ring.d0 - 2), ring.d1 + 1, 64),
+      new THREE.MeshStandardMaterial({ color: 0x3a4149, roughness: 1, side: THREE.DoubleSide })
     );
-    walk.position.y = ring.h0 - 0.4;
+    walk.rotation.x = -Math.PI / 2;
+    walk.position.y = ring.h0 + 0.03;
     bowlGroup.add(walk);
   }
 }
