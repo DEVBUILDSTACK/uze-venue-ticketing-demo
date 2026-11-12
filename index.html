@@ -50,6 +50,24 @@
   .btnrow { display:flex; gap:8px; } .cta { flex:1; background:var(--tang); color:#fff; border:none; padding:11px; border-radius:999px; font-size:14px; cursor:pointer; font-family:Helvetica,Arial,sans-serif; }
   .cta:hover { background:#e05f00; }
   .receipt { margin-top:12px; background:var(--cream); border:1px dashed var(--tang); border-radius:9px; padding:10px; font-size:13px; line-height:1.5; }
+
+  section.market { padding:18px 22px 26px; border-top:1px solid var(--line); background:#fff; }
+  section.market h2 { font-family:Helvetica,Arial,sans-serif; font-size:15px; letter-spacing:.06em; text-transform:uppercase; margin:4px 0 6px; }
+  section.market .sub { font-family:Helvetica,Arial,sans-serif; font-size:13px; opacity:.75; max-width:860px; line-height:1.5; }
+  .mgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:14px; }
+  .mcard { border:1px solid var(--line); border-radius:12px; padding:14px; font-family:Helvetica,Arial,sans-serif; font-size:13px; background:var(--cream); }
+  .mcard h3 { margin:0 0 8px; font-size:14px; }
+  .walletbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; font-family:Helvetica,Arial,sans-serif; font-size:13px; }
+  .wbtn { background:var(--ink); color:#fff; border:none; padding:9px 16px; border-radius:999px; cursor:pointer; font-size:13px; }
+  .addr { background:#fff; border:1px dashed var(--tang); border-radius:8px; padding:5px 9px; font-family:monospace; font-size:12px; }
+  .ticket { background:#fff; border:1px solid var(--line); border-left:5px solid var(--tang); border-radius:9px; padding:10px; margin-bottom:9px; line-height:1.5; }
+  .ticket .tid { font-weight:bold; } .hash { font-family:monospace; font-size:11px; opacity:.7; word-break:break-all; }
+  .badge { display:inline-block; background:#1d7a3a; color:#fff; font-size:10px; letter-spacing:.08em; padding:2px 8px; border-radius:999px; }
+  .badge.road { background:#b3261e; } .badge.mockb { background:var(--tang); }
+  .ticket button, .mcard button.buy { margin-top:6px; border:1px solid var(--line); background:#fff; border-radius:999px; padding:6px 12px; cursor:pointer; font-size:12px; }
+  .ticket button.list, .mcard button.buy { background:var(--tang); color:#fff; border:none; }
+  .prov { margin:6px 0 0; padding-left:16px; font-size:12px; line-height:1.6; }
+  select.vsel { width:100%; padding:7px; border-radius:7px; border:1px solid var(--line); margin-bottom:8px; }
   footer { padding:10px 22px; font-family:Helvetica,Arial,sans-serif; font-size:12px; opacity:.7; border-top:1px solid var(--line); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } aside { border-left:none; border-top:1px solid var(--line); } }
 </style>
@@ -85,7 +103,28 @@
     <div id="sector-list"></div>
     <div id="detail"></div>
   </aside>
+
 </main>
+<section class="market">
+  <h2>Primary &amp; Secondary Market <span class="mocktag">MOCK</span></h2>
+  <p class="sub">Every ticket is an <strong>NFT on LightLink (EVM)</strong>, held in the buyer's own wallet — no affiliate account needed.
+  At mint, the sale is sealed with an <strong>REE receipt</strong> and a <strong>TEE attestation</strong> that the ticket was issued by
+  <strong>UZEmarkets</strong> — so any later buyer can verify the ticket is genuine and trace the original NFT from the first
+  buyer's wallet to theirs. Resale moves the <em>same</em> NFT; the provenance chain is the fraud check.
+  Wallet and chain are mocked here; the production integration is with our Australian partner <strong>Tickify.io</strong>
+  on LightLink (founder Roy Hui, participating affiliate partner).</p>
+  <div class="walletbar">
+    <button class="wbtn" id="walletBtn">Connect wallet — LightLink (mock)</button>
+    <span id="walletAddr"></span>
+  </div>
+  <div class="mgrid">
+    <div class="mcard"><h3>🎟 My tickets (primary mints &amp; purchases)</h3><div id="myTickets"><p class="hint">Connect a wallet, then use “Mock checkout” above — your ticket is minted as an NFT here.</p></div></div>
+    <div class="mcard"><h3>🔁 Secondary market — resale listings</h3><div id="resaleList"></div>
+      <p class="hint" style="margin-top:8px">Confidential resale pricing via <strong>Arcium</strong> MPC is the production design — <span class="badge road">🔴 ROADMAP</span> In this mock, transfers are shown in the clear.</p></div>
+    <div class="mcard"><h3>✓ Verify a ticket</h3><select class="vsel" id="verifySel"></select><div id="verifyOut"><p class="hint">Select a ticket to see its provenance chain and attestation.</p></div></div>
+  </div>
+</section>
+
 <div id="tip"></div>
 <footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · scroll to zoom · click a sector to fly to it. Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script>
@@ -304,13 +343,14 @@ function renderDetail() {
 }
 
 function mockCheckout() {
+  const minted = mintTicket(selected, selectedRing, sectorPrice(selected, selectedRing) * qty);
   const el = document.getElementById("receipt");
   const ref = "MOCK-" + Math.random().toString(36).slice(2, 8).toUpperCase();
   el.innerHTML = `<div class="receipt">
     <strong>Mock order ${ref}</strong><br>
     ${qty} × ${selected.name} · ${selectedRing.name} — €${sectorPrice(selected, selectedRing) * qty}<br>
     Event: Internacional vs São Paulo FC · January 2027 (demo fixture)<br>
-    <span class="mocktag">MOCK SETTLEMENT</span> In production this settles in USDC
+    <span class="mocktag">MOCK SETTLEMENT</span> NFT Ticket #${minted.id} minted to your wallet — see “My tickets” below. In production this settles in USDC
     on Solana with GIRAx attestation of the ticket. No funds move in this mock-up.
   </div>`;
 }
@@ -393,6 +433,113 @@ document.getElementById("venueName").textContent = `${VENUE.name} — ${VENUE.ci
 renderList();
 renderDetail();
 tick();
+
+// ===========================================================================
+// MARKET LAYER (MOCK) — primary NFT mint + secondary resale on LightLink.
+// All state is in-memory and labelled MOCK. Production: Tickify.io partner
+// integration on LightLink EVM; confidential resale pricing via Arcium MPC
+// is the roadmap seam (see the note in the secondary panel).
+// ===========================================================================
+const MARKET = { wallet: null, tickets: [], counter: 1042 };
+const ISSUER = "UZEmarkets (issuer)";
+const hex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
+const newAddr = () => "0x" + hex(20);
+const short = (a) => (a === ISSUER ? a : a.slice(0, 6) + "…" + a.slice(-4));
+
+function connectWallet() {
+  if (!MARKET.wallet) MARKET.wallet = newAddr();
+  document.getElementById("walletAddr").innerHTML =
+    `<span class="addr">${MARKET.wallet}</span> <span class="badge mockb">LIGHTLINK · MOCK WALLET</span>`;
+  document.getElementById("walletBtn").textContent = "Wallet connected";
+  renderMarket();
+}
+document.getElementById("walletBtn").addEventListener("click", connectWallet);
+
+function mintTicket(sector, ring, price) {
+  if (!MARKET.wallet) connectWallet();
+  const t = {
+    id: MARKET.counter++,
+    sector: sector.name, ring: ring.name, price,
+    owner: MARKET.wallet, listed: null,
+    ree: "0x" + hex(32),
+    history: [{ from: ISSUER, to: MARKET.wallet, kind: "Primary mint", hash: "0x" + hex(32) }],
+  };
+  MARKET.tickets.push(t);
+  renderMarket();
+  return t;
+}
+
+function seedResale() {
+  const seeds = [
+    { sector: "Tribuna Central", ring: "Lower Ring", price: 460 },
+    { sector: "Gol Nord", ring: "Middle Ring", price: 165 },
+    { sector: "Lateral Central", ring: "Upper Ring", price: 285 },
+  ];
+  for (const s of seeds) {
+    const owner = newAddr();
+    MARKET.tickets.push({
+      id: MARKET.counter++, ...s, owner, listed: s.price, ree: "0x" + hex(32),
+      history: [{ from: ISSUER, to: owner, kind: "Primary mint", hash: "0x" + hex(32) }],
+    });
+  }
+}
+
+function provenance(t) {
+  return `<ul class="prov">${t.history.map((h) =>
+    `<li><strong>${h.kind}:</strong> ${short(h.from)} → ${short(h.to)}<br><span class="hash">tx ${h.hash}</span></li>`).join("")}</ul>`;
+}
+
+function renderMarket() {
+  const mine = MARKET.tickets.filter((t) => MARKET.wallet && t.owner === MARKET.wallet);
+  document.getElementById("myTickets").innerHTML = mine.length ? mine.map((t) => `
+    <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring} · €${t.price}<br>
+    <span class="badge">✓ REE + TEE ATTESTED (MOCK)</span> <span class="badge mockb">ISSUED BY UZEMARKETS</span><br>
+    <span class="hash">REE receipt ${t.ree}</span><br>
+    ${t.listed ? `<em>Listed for resale at €${t.listed}</em>` :
+      `<button class="list" data-list="${t.id}">List for resale</button>`}
+    </div>`).join("")
+    : `<p class="hint">No tickets yet — mint one with “Mock checkout” above.</p>`;
+
+  const resale = MARKET.tickets.filter((t) => t.listed && t.owner !== MARKET.wallet);
+  document.getElementById("resaleList").innerHTML = resale.length ? resale.map((t) => `
+    <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring}<br>
+    Seller <span class="addr">${short(t.owner)}</span> · <strong>€${t.listed}</strong><br>
+    <span class="badge">✓ PROVENANCE VERIFIABLE</span><br>
+    <button class="buy" data-buy="${t.id}">Buy — NFT transfers to my wallet</button></div>`).join("")
+    : `<p class="hint">No resale listings right now.</p>`;
+
+  const sel = document.getElementById("verifySel");
+  sel.innerHTML = MARKET.tickets.map((t) => `<option value="${t.id}">NFT Ticket #${t.id} — ${t.sector} · ${t.ring}</option>`).join("");
+  if (MARKET.tickets.length) showVerify(Number(sel.value || MARKET.tickets[0].id));
+
+  document.querySelectorAll("[data-list]").forEach((b) => b.addEventListener("click", () => {
+    const t = MARKET.tickets.find((x) => x.id === Number(b.dataset.list));
+    const ask = prompt("Resale asking price (EUR)?", String(Math.round(t.price * 1.2)));
+    if (ask && Number(ask) > 0) { t.listed = Number(ask); renderMarket(); }
+  }));
+  document.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => {
+    if (!MARKET.wallet) connectWallet();
+    const t = MARKET.tickets.find((x) => x.id === Number(b.dataset.buy));
+    const paid = t.listed;
+    t.history.push({ from: t.owner, to: MARKET.wallet, kind: `Secondary sale · €${paid}`, hash: "0x" + hex(32) });
+    t.owner = MARKET.wallet; t.price = paid; t.listed = null;
+    renderMarket();
+  }));
+}
+
+function showVerify(id) {
+  const t = MARKET.tickets.find((x) => x.id === id);
+  if (!t) return;
+  document.getElementById("verifyOut").innerHTML = `
+    <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring}<br>
+    Current owner <span class="addr">${short(t.owner)}</span><br>
+    <span class="badge">✓ GENUINE — ISSUED BY UZEMARKETS (MOCK VERIFICATION)</span><br>
+    <span class="hash">REE receipt ${t.ree} · TEE attestation sealed at mint</span>
+    ${provenance(t)}</div>`;
+}
+document.getElementById("verifySel").addEventListener("change", (e) => showVerify(Number(e.target.value)));
+seedResale();
+renderMarket();
 
 </script>
 </body>
