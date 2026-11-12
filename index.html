@@ -71,6 +71,7 @@
   .ticket button.list, .mcard button.buy { background:var(--tang); color:#fff; border:none; }
   .prov { margin:6px 0 0; padding-left:16px; font-size:12px; line-height:1.6; }
   select.vsel { width:100%; padding:7px; border-radius:7px; border:1px solid var(--line); margin-bottom:8px; }
+  .viewhint { font-size:12px; opacity:.75; max-width:520px; line-height:1.45; }
   footer { padding:10px 22px; font-family:Helvetica,Arial,sans-serif; font-size:12px; opacity:.7; border-top:1px solid var(--line); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } aside { border-left:none; border-top:1px solid var(--line); } }
 </style>
@@ -91,8 +92,9 @@
 <main>
   <div id="scene">
     <div class="viewbar">
-      <button id="viewOverview">Overview</button>
-      <button id="viewTop">Top view</button>
+      <button id="viewOverview">Overview — orbit view</button>
+      <button id="viewTop">Top view — seat map</button>
+      <span class="viewhint">This is the 3D venue map: drag to spin it, scroll or pinch to zoom, tap a coloured sector and the camera flies in to show the view from those seats.</span>
     </div>
   </div>
   <aside>
@@ -132,7 +134,7 @@
 
 <div id="tip"></div>
 <footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · scroll to zoom · click a sector to fly to it. Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
-<script>
+<script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
 // A venue is NOT a 3D model. It is two small tables:
