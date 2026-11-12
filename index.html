@@ -175,7 +175,7 @@
     <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
   </div>
 </section>
-<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v2 (flow bar + allocation engine). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
+<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v3 (flow bar + allocation engine + camera arrival fix). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
@@ -512,13 +512,13 @@ const apron = new THREE.Mesh(
 );
 apron.rotation.x = -Math.PI / 2; apron.position.y = 0.05; scene.add(apron);
 // Roof ring + floodlight pylons — silhouette that reads "stadium" instantly.
-const roof = new THREE.Mesh(
+const roofBand = new THREE.Mesh(
   new THREE.CylinderGeometry(93, 93, 3, 64, 1, true),
   new THREE.MeshStandardMaterial({ color: 0x22282e, roughness: 0.9, side: THREE.DoubleSide })
 );
-roof.position.y = 54; scene.add(roof);
+roofBand.position.y = 54; scene.add(roofBand);
 const roofTop = new THREE.Mesh(
-  new THREE.RingGeometry(58, 95, 64),
+  new THREE.RingGeometry(76, 96, 64),
   new THREE.MeshStandardMaterial({ color: 0x2b3238, roughness: 1, side: THREE.DoubleSide })
 );
 roofTop.rotation.x = -Math.PI / 2; roofTop.position.y = 55.6; scene.add(roofTop);
@@ -645,22 +645,37 @@ function mockCheckout(asg) {
 
 // --- Camera moves ------------------------------------------------------------
 let camAnim = null;
+let flightSeq = 0;
 function flyTo(targetPos, lookAt) {
+  const id = ++flightSeq;
   camAnim = {
     fromPos: camera.position.clone(), toPos: targetPos,
-    fromTg: controls.target.clone(), toTg: lookAt, t: 0,
+    fromTg: controls.target.clone(), toTg: lookAt,
+    start: performance.now(), id,
   };
+  // Arrival guarantee: if animation frames are throttled (background tab,
+  // busy phone), snap to the destination so the user is never left mid-flight.
+  setTimeout(() => {
+    if (camAnim && camAnim.id === id) {
+      camera.position.copy(targetPos);
+      controls.target.copy(lookAt);
+      camAnim = null;
+    }
+  }, 1050);
 }
+function setRoof(v) { roofBand.visible = v; roofTop.visible = v; }
 function sectorPoint(sector, ring, dist, heightPad) {
   const mid = THREE.MathUtils.degToRad((sector.a0 + sector.a1) / 2);
   const r = dist ?? (ring.d0 + ring.d1) / 2;
   return new THREE.Vector3(Math.sin(mid) * r, ring.h0 + (ring.h1 - ring.h0) / 2 + (heightPad ?? 0), Math.cos(mid) * r);
 }
 function flyToSector(sector, ring) {
+  setRoof(true);
   const p = sectorPoint(sector, ring, (ring.d1 + 55), 18);
   flyTo(p, new THREE.Vector3(0, 6, 0));
 }
 function seatView(sector, ring) {
+  setRoof(true);
   const p = sectorPoint(sector, ring, undefined, 1.5);
   flyTo(p, new THREE.Vector3(0, 2, 0));
   inSeatView = true;
@@ -685,6 +700,7 @@ flowBack.addEventListener("click", () => {
   } else {
     inSeatView = false; selected = null; assignment = null;
     renderList(); renderDetail();
+    setRoof(true);
     flyTo(new THREE.Vector3(150, 110, 150), new THREE.Vector3(0, 4, 0));
     flowbar.classList.add("hidden");
   }
@@ -694,12 +710,14 @@ document.getElementById("flowNext").addEventListener("click", () => {
 });
 document.getElementById("viewOverview").addEventListener("click", () => {
   inSeatView = false;
+  setRoof(true);
   flyTo(new THREE.Vector3(150, 110, 150), new THREE.Vector3(0, 4, 0));
   if (!selected && flowbar) flowbar.classList.add("hidden");
 });
 document.getElementById("viewTop").addEventListener("click", () => {
   inSeatView = false;
-  flyTo(new THREE.Vector3(0.1, 240, 0.1), new THREE.Vector3(0, 0, 0));
+  setRoof(false); // seat-map mode: roof off so the bowl interior reads from above
+  flyTo(new THREE.Vector3(0.1, 250, 0.1), new THREE.Vector3(0, 0, 0));
   showFlow("Top view — the full seat map");
 });
 
@@ -738,11 +756,11 @@ renderer.domElement.addEventListener("click", () => {
 function tick() {
   requestAnimationFrame(tick);
   if (camAnim) {
-    camAnim.t = Math.min(1, camAnim.t + 0.02);
-    const k = 1 - Math.pow(1 - camAnim.t, 3);
+    const p = Math.min(1, (performance.now() - camAnim.start) / 900);
+    const k = 1 - Math.pow(1 - p, 3);
     camera.position.lerpVectors(camAnim.fromPos, camAnim.toPos, k);
     controls.target.lerpVectors(camAnim.fromTg, camAnim.toTg, k);
-    if (camAnim.t >= 1) camAnim = null;
+    if (p >= 1) camAnim = null;
   }
   controls.update();
   renderer.render(scene, camera);
