@@ -111,6 +111,7 @@
       <button id="viewTop">Top view — seat map</button>
       <span class="viewhint">This is the 3D venue map: drag to spin it, tap a coloured sector and the camera flies in to show the view from those seats.</span>
     </div>
+    <div id="camdbg" style="position:absolute;left:10px;bottom:10px;z-index:5;font-family:monospace;font-size:11px;color:#cfe3ff;background:rgba(13,17,21,.55);padding:4px 8px;border-radius:6px"></div>
     <div id="flowbar" class="flowbar hidden">
       <button id="flowBack">⌄ Full venue</button>
       <span id="flowLabel"></span>
@@ -175,7 +176,7 @@
     <div class="mcard"><h3>🏆 Leaderboard — closest to the settled price wins</h3><div id="board"><p class="hint">Calls appear here. Settle the market to award the tickets.</p></div></div>
   </div>
 </section>
-<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v3 (flow bar + allocation engine + camera arrival fix). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
+<footer>© 2026 <a href="https://uzemarkets.com" style="color:#ff6b00;text-decoration:none">UZE</a>markets — Drag to rotate · click a sector to fly to it. Demo build 2026-11-12 · flow-v4 (telemetry). Venue geometry is generated from the sector/ring data tables in <code>src/venue-data.js</code> — a new venue is a data entry, not a 3D model.</footer>
 <script type="module">
 // Venue-as-data — the whole pattern in one table.
 //
@@ -448,7 +449,7 @@ sun.castShadow = true;
 scene.add(sun);
 
 // --- Pitch -----------------------------------------------------------------
-const pitchMat = new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 1 });
+const pitchMat = new THREE.MeshStandardMaterial({ color: 0x43a047, roughness: 1, emissive: 0x1d5c22, emissiveIntensity: 0.6 });
 const pitch = new THREE.Mesh(new THREE.BoxGeometry(68, 1, 44), pitchMat);
 pitch.position.y = 0.5;
 pitch.receiveShadow = true;
@@ -508,7 +509,7 @@ buildBowl();
 // Apron floor so the bowl interior reads as a venue, not a void (top view).
 const apron = new THREE.Mesh(
   new THREE.CircleGeometry(97, 48),
-  new THREE.MeshStandardMaterial({ color: 0x39424c, roughness: 1 })
+  new THREE.MeshStandardMaterial({ color: 0x5b6672, roughness: 1 })
 );
 apron.rotation.x = -Math.PI / 2; apron.position.y = 0.05; scene.add(apron);
 // Roof ring + floodlight pylons — silhouette that reads "stadium" instantly.
@@ -764,6 +765,13 @@ function tick() {
   }
   controls.update();
   renderer.render(scene, camera);
+  if ((tick.n = (tick.n || 0) + 1) % 20 === 0) {
+    const el = document.getElementById("camdbg");
+    if (el) {
+      const p = camera.position, t = controls.target;
+      el.textContent = `CAM ${p.x.toFixed(0)},${p.y.toFixed(0)},${p.z.toFixed(0)} → TGT ${t.x.toFixed(0)},${t.y.toFixed(0)},${t.z.toFixed(0)} · pitch #${pitchMat.color.getHexString()} · roof ${roofBand.visible ? "on" : "off"} · anim ${camAnim ? "flying" : "idle"}`;
+    }
+  }
 }
 window.addEventListener("resize", () => {
   camera.aspect = canvasWrap.clientWidth / canvasWrap.clientHeight;
