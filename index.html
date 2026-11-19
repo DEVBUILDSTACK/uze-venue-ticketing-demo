@@ -136,20 +136,20 @@
 <section class="market">
   <h2>Primary &amp; Secondary Market <span class="mocktag">MOCK</span></h2>
   <p class="sub">Built for Brazil's play market — <strong>soccer, music, and large tech conventions</strong> — with secondary sales and partner referrals across Brazil, Central America, and the Caribbean.</p>
-  <p class="sub">Every ticket is an <strong>NFT minted on NEAR</strong>, held in the buyer's own wallet — bridged to <strong>LightLink (EVM)</strong> — no affiliate account needed.
-  At mint, the sale is sealed with an <strong>REE receipt</strong> and a <strong>TEE attestation</strong> that the ticket was issued by
+  <p class="sub">Every ticket is an <strong>NFT on the blockchain</strong>, held in the buyer's own <strong>web3 wallet</strong> — an <strong>EVM wallet</strong> — no affiliate account needed.
+  At mint, the sale is recorded with a <strong>programmatic receipt</strong> and an <strong>attestation</strong> that the ticket was issued by
   <strong>UZEmarkets</strong> — so any later buyer can verify the ticket is genuine and trace the original NFT from the first
-  buyer's wallet to theirs. Resale moves the <em>same</em> NFT; the provenance chain is the fraud check. Matching itself stays on <strong>NEAR</strong>: buyers and sellers post <strong>intents</strong>, and the <strong>solver network</strong> matches the parties — matching is the marketplace's core function, and solvers are how it scales.
+  buyer's wallet to theirs. Resale moves the <em>same</em> NFT; the provenance chain is the fraud check. Matching itself is <strong>agentic</strong>: buyers and sellers post what they want, and the <strong>SI</strong> matches the parties — matching is the marketplace's core function, and the SI is how it scales.
   Wallet and chain are mocked here.</p>
   <p class="sub"><strong>Where the margin is:</strong> we enable tickets at the original (commercial) price — but the real margin is the <strong>hold</strong>. A buyer with launch-market access to a big-name event can secure more than one ticket at the commercial price and resell into the <strong>secondary premium</strong> — the price people with money pay to choose exactly where they sit. Two prices, one attested NFT the whole way. Your tickets below show both: what you paid at launch, and what the secondary market says now.</p>
   <div class="walletbar">
-    <button class="wbtn" id="walletBtn">Connect wallet — LightLink (mock)</button>
+    <button class="wbtn" id="walletBtn">Connect wallet — EVM (mock)</button>
     <span id="walletAddr"></span>
   </div>
   <div class="mgrid">
     <div class="mcard"><h3>🎟 My tickets (primary mints &amp; purchases)</h3><div id="myTickets"><p class="hint">Connect a wallet, then use “Mock checkout” above — your ticket is minted as an NFT here.</p></div></div>
     <div class="mcard"><h3>🔁 Secondary market — resale listings</h3><div id="resaleList"></div>
-      <p class="hint" style="margin-top:8px">Confidential resale pricing via <strong>Arcium</strong> MPC is the production design — <span class="badge road">🔴 ROADMAP</span> In this mock, transfers are shown in the clear.</p></div>
+      <p class="hint" style="margin-top:8px">Confidential resale pricing is the production design — <span class="badge road">🔴 ROADMAP</span> In this mock, transfers are shown in the clear.</p></div>
     <div class="mcard"><h3>✓ Verify a ticket</h3><select class="vsel" id="verifySel"></select><div id="verifyOut"><p class="hint">Select a ticket to see its provenance chain and attestation.</p></div></div>
   </div>
 </section>
@@ -163,7 +163,7 @@
   the <strong>two closest calls</strong> win tickets: closest call takes the <span class="prize">grand prize — a PAIR of tickets</span>;
   second closest takes the <span class="prize">consolation — a SINGLE ticket</span>. Prize tickets are minted as the same attested
   NFTs, straight into the winner's wallet. Prize inventory is held back from the platform's own primary allocation \u2014 never bought off the secondary market, so nobody can pump the index to inflate a prize. Calls are open to primary ticket holders only: you must own the asset to price its secondary market. Every call is a signal the supply side prices against — demand, revealed before on-sale.
-  Positions bridge in via <strong>NEAR Intents</strong> (mocked here).</p>
+  Positions arrive through the <strong>SI</strong> (mocked here).</p>
   <div class="callit">
     <div class="mcard"><h3>🎯 Make your call</h3>
       <p class="hint" id="callLabel">Your call (R$):</p>
@@ -674,7 +674,7 @@ function mockCheckout(asg) {
     ${asg ? `Seats assigned together: Row ${asg.row} · Seats ${asg.seatStart}–${asg.seatStart + qty - 1}<br>` : ""}
     Event: ${EVENT.receipt}<br>
     <span class="mocktag">MOCK SETTLEMENT</span> ${idsLabel} minted to your wallet — one NFT per seat, each with its own provenance chain — see “My tickets” below. In production this settles in USDC
-    on Solana, each ticket carrying its attestation. No funds move in this mock-up.
+    on the blockchain, each ticket carrying its attestation. No funds move in this mock-up.
   </div>`;
 }
 
@@ -849,9 +849,9 @@ renderDetail();
 tick();
 
 // ===========================================================================
-// MARKET LAYER (MOCK) — primary NFT mint + secondary resale on LightLink.
-// All state is in-memory and labelled MOCK. Production: NEAR primary
-// mint with the LightLink EVM bridge; confidential resale pricing via Arcium MPC
+// MARKET LAYER (MOCK) — primary NFT mint + secondary resale on the blockchain.
+// All state is in-memory and labelled MOCK. Production: blockchain primary
+// mint with the EVM bridge; confidential resale pricing in the design
 // is the roadmap seam (see the note in the secondary panel).
 // ===========================================================================
 const MARKET = { wallet: null, tickets: [], counter: 1042 };
@@ -863,7 +863,7 @@ const short = (a) => (a === ISSUER ? a : a.slice(0, 6) + "…" + a.slice(-4));
 function connectWallet() {
   if (!MARKET.wallet) MARKET.wallet = newAddr();
   document.getElementById("walletAddr").innerHTML =
-    `<span class="addr">${MARKET.wallet}</span> <span class="badge mockb">LIGHTLINK · MOCK WALLET</span>`;
+    `<span class="addr">${MARKET.wallet}</span> <span class="badge mockb">EVM WALLET · MOCK</span>`;
   document.getElementById("walletBtn").textContent = "Wallet connected";
   renderMarket();
 }
@@ -922,8 +922,8 @@ function renderMarket() {
   const mine = MARKET.tickets.filter((t) => MARKET.wallet && t.owner === MARKET.wallet && t.eventId === EVENT.id);
   document.getElementById("myTickets").innerHTML = mine.length ? mine.map((t) => `
     <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring}${t.seat ? ` · Row ${t.row} · Seat ${t.seat}` : ""} · ${CUR}${t.price}<br>
-    <span class="badge">✓ REE + TEE ATTESTED (MOCK)</span> <span class="badge mockb">ISSUED BY UZEMARKETS</span><br>
-    <span class="hash">REE receipt ${t.ree}</span><br>
+    <span class="badge">✓ ATTESTED (MOCK)</span> <span class="badge mockb">ISSUED BY UZEMARKETS</span><br>
+    <span class="hash">Programmatic receipt ${t.ree}</span><br>
     Primary (launch) price: <strong>${CUR}${t.price}</strong> · Secondary index now: <strong>${CUR}${secIndex(t)}</strong> <span class="prize">(+${secPct(t)}% hold margin)</span><br>
     ${t.listed ? `<em>Listed for resale at ${CUR}${t.listed}</em>` :
       `<span class="listrow">Ask ${CUR}<input type="number" class="askIn" data-ask="${t.id}" value="${secIndex(t)}" min="1" step="1"> <button class="list" data-list="${t.id}">List for resale</button></span>`}
@@ -966,7 +966,7 @@ function showVerify(id) {
     <div class="ticket"><span class="tid">NFT Ticket #${t.id}</span> — ${t.sector} · ${t.ring}<br>
     Current owner <span class="addr">${short(t.owner)}</span><br>
     <span class="badge">✓ GENUINE — ISSUED BY UZEMARKETS (MOCK VERIFICATION)</span><br>
-    <span class="hash">REE receipt ${t.ree} · TEE attestation sealed at mint</span>
+    <span class="hash">Programmatic receipt ${t.ree} · attestation recorded at mint</span>
     ${provenance(t)}</div>`;
 }
 document.getElementById("verifySel").addEventListener("change", (e) => showVerify(Number(e.target.value)));
@@ -1010,7 +1010,7 @@ function emIntroHTML(EM) {
   NFTs, straight into the winner's wallet. Prize inventory is held back from the platform's own primary allocation \u2014 never bought
   off the secondary market, so nobody can pump the index to inflate a prize. Calls are open to primary ticket holders only:
   you must own the asset to price its secondary market. Every call is a signal the supply side prices against \u2014 demand, revealed
-  before on-sale. Positions bridge in via <strong>NEAR Intents</strong> (mocked here).`;
+  before on-sale. Positions arrive through the <strong>SI</strong> (mocked here).`;
 }
 
 function renderEventMarket() {
